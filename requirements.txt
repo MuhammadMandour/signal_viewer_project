@@ -1,0 +1,9 @@
+dash
+dash-bootstrap-components
+plotly
+wfdb
+numpy
+scipy
+tensorflow
+pyts
+Pillow
