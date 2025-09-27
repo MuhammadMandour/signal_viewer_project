@@ -1,0 +1,37 @@
+{
+  "class_names": [
+    "Alzheimer",
+    "Epilepsy",
+    "SleepDisorders",
+    "Depression"
+  ],
+  "available_classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "available_class_names": [
+    "Alzheimer",
+    "Epilepsy",
+    "SleepDisorders",
+    "Depression"
+  ],
+  "num_timesteps": 256,
+  "num_channels": 16,
+  "target_channels": 16,
+  "sfreq": 256,
+  "win_sec": 1.0,
+  "step_sec": 0.8,
+  "total_samples": 1823,
+  "train_samples": 1458,
+  "test_samples": 365,
+  "final_val_accuracy": 1.0,
+  "final_val_loss": 4.0825094416163665e-09,
+  "channel_standardized": true,
+  "alzheimer_included": true,
+  "memory_optimized": true,
+  "batch_size": 16,
+  "epochs_trained": 25,
+  "model_version": "2.0"
+}
