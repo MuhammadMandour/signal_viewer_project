@@ -2,9 +2,8 @@ from dash import Dash, html, dcc, Input, Output
 import dash
 
 app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
-server = app.server  # for deployment
+server = app.server
 
-# Home page layout
 home_layout = html.Div(
     style={'backgroundColor': '#CAF0F8', 'textAlign': 'center', 'fontFamily': 'Arial, sans-serif', 'padding': '50px'},
     children=[
@@ -12,7 +11,6 @@ home_layout = html.Div(
             "Welcome to Signal Viewer",
             style={'color': '#03045E', 'fontSize': '64px', 'fontWeight': 'bold', 'marginBottom': '40px'}
         ),
-        # Updated description
         html.P(
             "Signal Viewer is a professional platform for analyzing a wide range of signals. "
             "It is divided into two main parts: \n"
@@ -27,25 +25,38 @@ home_layout = html.Div(
             style={'display': 'flex', 'justifyContent': 'center', 'gap': '30px'},
             children=[
                 dcc.Link(html.Button("ECG", style={
-                    'backgroundColor': '#023E8A', 'color': 'black', 'borderRadius': '25px',
+                    'backgroundColor': '#023E8A', 'color': 'white', 'borderRadius': '25px',
                     'padding': '15px 40px', 'fontSize': '18px', 'border': 'none', 'cursor': 'pointer'
                 }), href='/ecg'),
-                html.Button("EEG", style={'backgroundColor': '#023E8A', 'color': 'black', 'borderRadius': '25px',
-                                           'padding': '15px 40px', 'fontSize': '18px', 'border': 'none', 'cursor': 'pointer'}),
-                html.Button("Doppler Shift", style={'backgroundColor': '#023E8A', 'color': 'black', 'borderRadius': '25px',
+                dcc.Link(html.Button("EEG", style={
+                    'backgroundColor': '#023E8A', 'color': 'white', 'borderRadius': '25px',
+                    'padding': '15px 40px', 'fontSize': '18px', 'border': 'none', 'cursor': 'pointer'
+                }), href='/eeg'),
+                html.Button("Doppler Shift", style={'backgroundColor': '#023E8A', 'color': 'white', 'borderRadius': '25px',
                                                     'padding': '15px 40px', 'fontSize': '18px', 'border': 'none', 'cursor': 'pointer'}),
-                html.Button("Radar", style={'backgroundColor': '#023E8A', 'color': 'black', 'borderRadius': '25px',
+                html.Button("Radar", style={'backgroundColor': '#023E8A', 'color': 'white', 'borderRadius': '25px',
                                             'padding': '15px 40px', 'fontSize': '18px', 'border': 'none', 'cursor': 'pointer'}),
             ]
         )
     ]
 )
 
-# App layout using Dash pages
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
+
+# Import and register page callbacks
+import pages.ecg_page
+import pages.eeg_page
+
+# Register EEG callbacks if the module has the registration function
+if hasattr(pages.eeg_page, 'register_callbacks'):
+    pages.eeg_page.register_callbacks(app)
+
+# Register ECG callbacks - you'll need to add a similar register_callbacks function to ecg_page.py
+# if hasattr(pages.ecg_page, 'register_callbacks'):
+#     pages.ecg_page.register_callbacks(app)
 
 @app.callback(
     Output('page-content', 'children'),
@@ -53,8 +64,9 @@ app.layout = html.Div([
 )
 def display_page(pathname):
     if pathname == '/ecg':
-        import pages.ecg_page  # import here to avoid circular import
         return pages.ecg_page.layout
+    elif pathname == '/eeg':
+        return pages.eeg_page.layout
     else:
         return home_layout
 
