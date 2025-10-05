@@ -16,7 +16,7 @@ from tensorflow import keras
 os.makedirs("uploads", exist_ok=True)
 
 # ----------------- Load Model -----------------
-MODEL_PATH = os.path.join('models', 'model.hdf5')
+MODEL_PATH = os.path.join('models', 'ecg_model.hdf5')
 
 # Global variable to store model
 model = None
@@ -82,9 +82,9 @@ layout = html.Div(
         # Main Content Container
         html.Div(
             id='main-content',
-            style={'display': 'none', 'maxWidth': '1600px', 'margin': '0 auto'},
+            style={'display': 'none', 'maxWidth': '1800px', 'margin': '0 auto'},
             children=[
-                # Health Prediction Section (Top) - Modified for 6 abnormalities
+                # Health Prediction Section (Top)
                 html.Div(
                     id='prediction-section',
                     style={'marginBottom': '30px'},
@@ -120,22 +120,43 @@ layout = html.Div(
                                 'backgroundColor': '#16213e',
                                 'borderRadius': '15px',
                                 'padding': '25px',
-                                'width': '300px',
+                                'width': '350px',
                                 'boxShadow': '0 4px 20px rgba(0, 217, 255, 0.2)',
-                                'border': '1px solid #00d9ff'
+                                'border': '1px solid #00d9ff',
+                                'maxHeight': '800px',
+                                'overflowY': 'auto'
                             },
                             children=[
-                                html.H3("ECG Controls", style={'color': '#00d9ff', 'marginBottom': '20px', 'fontSize': '24px'}),
+                                html.H3("Viewer Controls", style={'color': '#00d9ff', 'marginBottom': '20px', 'fontSize': '24px'}),
+                                
+                                # Graph Mode Selection
+                                html.Label("Viewer Type", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                dcc.Dropdown(
+                                    id='graph-mode',
+                                    options=[
+                                        {'label': '📊 Default Continuous Time', 'value': 'waveform'},
+                                        {'label': '⚡ XOR Chunks', 'value': 'xor'},
+                                        {'label': '🎯 Polar Graph', 'value': 'polar'},
+                                        {'label': '🔄 Reoccurrence Graph', 'value': 'reoccurrence'}
+                                    ],
+                                    value='waveform',
+                                    style={
+                                        'marginBottom': '20px',
+                                        'backgroundColor': '#0f1626',
+                                        'color': '#1a1a2e',
+                                    },
+                                    className='custom-dropdown'
+                                ),
                                 
                                 # Window Width Control
-                                html.Label("Window width (seconds)", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                html.Label("Viewport/Chunk Width (seconds)", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
                                 dcc.Input(
                                     id='window-width',
                                     type='number',
                                     value=5,
                                     min=1,
                                     max=30,
-                                    step=1,
+                                    step=0.5,
                                     style={
                                         'width': '100%',
                                         'padding': '10px',
@@ -148,26 +169,83 @@ layout = html.Div(
                                     }
                                 ),
                                 
-                                # Graph Mode Selection
-                                html.Label("Graph Mode", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
-                                dcc.Dropdown(
-                                    id='graph-mode',
-                                    options=[
-                                        {'label': 'ECG Waveform', 'value': 'waveform'},
-                                        {'label': 'Polar Graph', 'value': 'polar'},
-                                        {'label': 'Recurrence Plot', 'value': 'recurrence'}
-                                    ],
-                                    value='waveform',
-                                    style={
-                                        'marginBottom': '20px',
-                                        'backgroundColor': '#0f1626',
-                                        'color': '#1a1a2e',
-                                    },
-                                    className='custom-dropdown'
+                                # Speed Control
+                                html.Label("Playback Speed", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                dcc.Slider(
+                                    id='speed-control',
+                                    min=0.5,
+                                    max=5,
+                                    step=0.5,
+                                    value=1,
+                                    marks={0.5: '0.5x', 1: '1x', 2: '2x', 3: '3x', 5: '5x'},
+                                    tooltip={"placement": "bottom", "always_visible": False},
+                                    className='custom-slider'
+                                ),
+                                html.Div(style={'marginBottom': '20px'}),
+                                
+                                # Zoom Control
+                                html.Label("Amplitude Zoom", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                dcc.Slider(
+                                    id='zoom-control',
+                                    min=0.5,
+                                    max=3,
+                                    step=0.25,
+                                    value=1,
+                                    marks={0.5: '0.5x', 1: '1x', 2: '2x', 3: '3x'},
+                                    tooltip={"placement": "bottom", "always_visible": False},
+                                    className='custom-slider'
+                                ),
+                                html.Div(style={'marginBottom': '20px'}),
+                                
+                                # Polar Mode (for polar graph)
+                                html.Div(
+                                    id='polar-mode-container',
+                                    style={'display': 'none'},
+                                    children=[
+                                        html.Label("Polar Display Mode", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                        dcc.RadioItems(
+                                            id='polar-mode',
+                                            options=[
+                                                {'label': ' Latest Fixed Time', 'value': 'latest'},
+                                                {'label': ' Cumulative', 'value': 'cumulative'}
+                                            ],
+                                            value='latest',
+                                            style={'color': '#00d9ff', 'marginBottom': '20px'},
+                                            labelStyle={'display': 'block', 'marginBottom': '8px'}
+                                        ),
+                                    ]
+                                ),
+                                
+                                # Colormap Selection (for 2D representations)
+                                html.Div(
+                                    id='colormap-container',
+                                    style={'display': 'none'},
+                                    children=[
+                                        html.Label("Colormap", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                        dcc.Dropdown(
+                                            id='colormap-selection',
+                                            options=[
+                                                {'label': 'Viridis', 'value': 'Viridis'},
+                                                {'label': 'Plasma', 'value': 'Plasma'},
+                                                {'label': 'Inferno', 'value': 'Inferno'},
+                                                {'label': 'Hot', 'value': 'Hot'},
+                                                {'label': 'Jet', 'value': 'Jet'},
+                                                {'label': 'Rainbow', 'value': 'Rainbow'},
+                                                {'label': 'Blues', 'value': 'Blues'},
+                                                {'label': 'Reds', 'value': 'Reds'},
+                                            ],
+                                            value='Viridis',
+                                            style={
+                                                'marginBottom': '20px',
+                                                'backgroundColor': '#0f1626',
+                                                'color': '#1a1a2e',
+                                            },
+                                        ),
+                                    ]
                                 ),
                                 
                                 # Channel Selection
-                                html.Label("Select Channels", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '12px', 'display': 'block'}),
+                                html.Label("Select Channels to Display", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '12px', 'display': 'block'}),
                                 dcc.Checklist(
                                     id='channel-selection',
                                     options=[],
@@ -176,23 +254,128 @@ layout = html.Div(
                                     labelStyle={'display': 'block', 'marginBottom': '8px', 'cursor': 'pointer'}
                                 ),
                                 
-                                # Start/Stop Streaming Button
-                                html.Button(
-                                    "Start Streaming",
-                                    id='stream-btn',
-                                    n_clicks=0,
-                                    style={
-                                        'width': '100%',
-                                        'backgroundColor': '#00d9ff',
-                                        'color': '#1a1a2e',
-                                        'borderRadius': '8px',
-                                        'padding': '15px',
-                                        'fontSize': '16px',
-                                        'border': 'none',
-                                        'cursor': 'pointer',
-                                        'fontWeight': 'bold',
-                                        'marginTop': '10px'
-                                    }
+                                # Reoccurrence Channel Selection (X and Y)
+                                html.Div(
+                                    id='reoccurrence-channel-container',
+                                    style={'display': 'none'},
+                                    children=[
+                                        html.Label("X-Axis Channel", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                        dcc.Dropdown(
+                                            id='reoccurrence-x-channel',
+                                            options=[],
+                                            value=None,
+                                            style={
+                                                'marginBottom': '15px',
+                                                'backgroundColor': '#0f1626',
+                                                'color': '#1a1a2e',
+                                            },
+                                        ),
+                                        html.Label("Y-Axis Channel", style={'color': '#00d9ff', 'fontSize': '14px', 'marginBottom': '8px', 'display': 'block'}),
+                                        dcc.Dropdown(
+                                            id='reoccurrence-y-channel',
+                                            options=[],
+                                            value=None,
+                                            style={
+                                                'marginBottom': '20px',
+                                                'backgroundColor': '#0f1626',
+                                                'color': '#1a1a2e',
+                                            },
+                                        ),
+                                    ]
+                                ),
+                                
+                                # Playback Controls
+                                html.Div(
+                                    style={'display': 'flex', 'gap': '10px', 'marginTop': '20px'},
+                                    children=[
+                                        html.Button(
+                                            "▶ Play",
+                                            id='stream-btn',
+                                            n_clicks=0,
+                                            style={
+                                                'flex': '1',
+                                                'backgroundColor': '#00d9ff',
+                                                'color': '#1a1a2e',
+                                                'borderRadius': '8px',
+                                                'padding': '12px',
+                                                'fontSize': '14px',
+                                                'border': 'none',
+                                                'cursor': 'pointer',
+                                                'fontWeight': 'bold',
+                                            }
+                                        ),
+                                        html.Button(
+                                            "⏸ Pause",
+                                            id='pause-btn',
+                                            n_clicks=0,
+                                            style={
+                                                'flex': '1',
+                                                'backgroundColor': '#ff006e',
+                                                'color': '#fff',
+                                                'borderRadius': '8px',
+                                                'padding': '12px',
+                                                'fontSize': '14px',
+                                                'border': 'none',
+                                                'cursor': 'pointer',
+                                                'fontWeight': 'bold',
+                                            }
+                                        ),
+                                    ]
+                                ),
+                                
+                                # Pan Controls
+                                html.Div(
+                                    style={'display': 'flex', 'gap': '10px', 'marginTop': '15px'},
+                                    children=[
+                                        html.Button(
+                                            "⏮ Reset",
+                                            id='reset-btn',
+                                            n_clicks=0,
+                                            style={
+                                                'flex': '1',
+                                                'backgroundColor': '#8338ec',
+                                                'color': '#fff',
+                                                'borderRadius': '8px',
+                                                'padding': '12px',
+                                                'fontSize': '14px',
+                                                'border': 'none',
+                                                'cursor': 'pointer',
+                                                'fontWeight': 'bold',
+                                            }
+                                        ),
+                                        html.Button(
+                                            "◀ Back",
+                                            id='pan-back-btn',
+                                            n_clicks=0,
+                                            style={
+                                                'flex': '1',
+                                                'backgroundColor': '#2a9d8f',
+                                                'color': '#fff',
+                                                'borderRadius': '8px',
+                                                'padding': '12px',
+                                                'fontSize': '14px',
+                                                'border': 'none',
+                                                'cursor': 'pointer',
+                                                'fontWeight': 'bold',
+                                            }
+                                        ),
+                                        html.Button(
+                                            "▶ Forward",
+                                            id='pan-forward-btn',
+                                            n_clicks=0,
+                                            style={
+                                                'flex': '1',
+                                                'backgroundColor': '#2a9d8f',
+                                                'color': '#fff',
+                                                'borderRadius': '8px',
+                                                'padding': '12px',
+                                                'fontSize': '14px',
+                                                'border': 'none',
+                                                'cursor': 'pointer',
+                                                'fontWeight': 'bold',
+                                            }
+                                        ),
+                                    ]
                                 ),
                             ]
                         ),
@@ -204,7 +387,7 @@ layout = html.Div(
                                 dcc.Graph(
                                     id='ecg-stream-graph',
                                     style={
-                                        'height': '600px',
+                                        'height': '700px',
                                         'backgroundColor': '#16213e',
                                         'borderRadius': '15px',
                                         'boxShadow': '0 4px 20px rgba(0, 217, 255, 0.2)',
@@ -226,7 +409,8 @@ layout = html.Div(
                 
                 # Store components
                 dcc.Store(id='ecg-data-store'),
-                dcc.Store(id='stream-state', data={'streaming': False, 'position': 0})
+                dcc.Store(id='stream-state', data={'streaming': False, 'position': 0, 'polar_data': [], 'xor_chunks': []}),
+                dcc.Store(id='pan-clicks', data={'back': 0, 'forward': 0, 'reset': 0})
             ]
         ),
 
@@ -334,7 +518,6 @@ def read_wfdb_files(dat_path, hea_path):
 
 def preprocess_for_prediction(signals, fs, lead_names, target_fs=400, target_length=4096):
     """Preprocess ECG for 6-abnormality model prediction"""
-    # Map original lead names to model expected names
     mapping = {
         'I': 'DI', 'II': 'DII', 'III': 'DIII',
         'AVR': 'AVR', 'AVL': 'AVL', 'AVF': 'AVF',
@@ -344,31 +527,25 @@ def preprocess_for_prediction(signals, fs, lead_names, target_fs=400, target_len
     
     mapped_leads = [mapping.get(lead.upper(), None) for lead in lead_names]
     
-    # Model lead order
     model_leads = ['DI', 'DII', 'DIII', 'AVR', 'AVL', 'AVF',
                    'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
     
-    # Find indices to reorder leads
     indices = []
     for lead in model_leads:
         if lead in mapped_leads:
             indices.append(mapped_leads.index(lead))
         else:
-            # If lead missing, use zeros
             indices.append(-1)
     
-    # Reorder or fill missing leads
     signals_selected = np.zeros((signals.shape[0], 12))
     for i, idx in enumerate(indices):
         if idx >= 0:
             signals_selected[:, i] = signals[:, idx]
     
-    # Resample to target frequency
     if fs != target_fs:
         num_samples = int(signals_selected.shape[0] * target_fs / fs)
         signals_selected = resample(signals_selected, num_samples, axis=0)
     
-    # Crop or pad to target length
     curr_len = signals_selected.shape[0]
     if curr_len > target_length:
         signals_selected = signals_selected[:target_length, :]
@@ -376,10 +553,8 @@ def preprocess_for_prediction(signals, fs, lead_names, target_fs=400, target_len
         padding = np.zeros((target_length - curr_len, 12))
         signals_selected = np.vstack([signals_selected, padding])
     
-    # Normalize
     signals_norm = (signals_selected - np.mean(signals_selected, axis=0)) / (np.std(signals_selected, axis=0) + 1e-8)
     
-    # Add batch dimension
     input_tensor = np.expand_dims(signals_norm, axis=0)
     return input_tensor
 
@@ -391,13 +566,9 @@ def predict_abnormalities(signals, fs, lead_names):
         return None, "Model not loaded"
     
     try:
-        # Preprocess for model
         input_tensor = preprocess_for_prediction(signals, fs, lead_names)
-        
-        # Predict
         predictions = model.predict(input_tensor, verbose=0)[0]
         
-        # Abnormality names
         abnormalities = ["1dAVb", "RBBB", "LBBB", "SB", "AF", "ST"]
         
         results = {}
@@ -454,32 +625,6 @@ def process_ecg_signals(record):
     
     return processed_signals, fs_final, lead_names
 
-def generate_rp_data(signal, max_samples=400):
-    """Generate recurrence plot data"""
-    try:
-        if len(signal) > max_samples:
-            start_idx = len(signal) // 4
-            signal_subset = signal[start_idx:start_idx + max_samples]
-        else:
-            signal_subset = signal
-        
-        signal_mean = np.mean(signal_subset)
-        signal_std = np.std(signal_subset)
-        
-        if signal_std > 1e-8:
-            signal_normalized = (signal_subset - signal_mean) / signal_std
-        else:
-            signal_normalized = signal_subset - signal_mean
-        
-        signal_2d = signal_normalized.reshape(1, -1)
-        rp = RecurrencePlot(dimension=2, time_delay=2, percentage=15)
-        X_rp = rp.fit_transform(signal_2d)[0]
-        
-        return X_rp
-    except Exception as e:
-        print(f"Error generating RP: {e}")
-        return np.zeros((100, 100))
-
 # ----------------- Callbacks -----------------
 
 @callback(
@@ -500,6 +645,10 @@ def show_file_list(contents, filenames):
      Output('main-content', 'style'),
      Output('channel-selection', 'options'),
      Output('channel-selection', 'value'),
+     Output('reoccurrence-x-channel', 'options'),
+     Output('reoccurrence-y-channel', 'options'),
+     Output('reoccurrence-x-channel', 'value'),
+     Output('reoccurrence-y-channel', 'value'),
      Output('prediction-result', 'children'),
      Output('prediction-probabilities', 'children'),
      Output('prediction-details', 'children')],
@@ -508,7 +657,7 @@ def show_file_list(contents, filenames):
      State('upload-ecg', 'filename')]
 )
 def process_ecg(n_clicks, contents, filenames):
-    empty_outputs = (None, "", {'display':'none'}, [], [], "", "", "")
+    empty_outputs = (None, "", {'display':'none'}, [], [], [], [], None, None, "", "", "")
     
     if n_clicks == 0 or not contents or not filenames:
         return empty_outputs
@@ -518,29 +667,26 @@ def process_ecg(n_clicks, contents, filenames):
     if isinstance(filenames, str):
         filenames = [filenames]
     
-    # Clear uploads directory
     for filename in os.listdir("uploads"):
         try:
             os.unlink(os.path.join("uploads", filename))
         except:
             pass
     
-    # Save files
     for content, filename in zip(contents, filenames):
         try:
             data = content.split(',')[1] if ',' in content else content
             with open(os.path.join("uploads", filename), "wb") as f:
                 f.write(base64.b64decode(data))
         except Exception as e:
-            return (None, f"Error saving {filename}: {e}", {'display':'none'}, [], [], "", "", "")
+            return (None, f"Error saving {filename}: {e}", {'display':'none'}, [], [], [], [], None, None, "", "", "")
     
-    # Find files
     saved_files = os.listdir("uploads")
     dat_files = [f for f in saved_files if f.endswith('.dat')]
     hea_files = [f for f in saved_files if f.endswith('.hea')]
     
     if not dat_files or not hea_files:
-        return (None, "Missing .dat or .hea files", {'display':'none'}, [], [], "", "", "")
+        return (None, "Missing .dat or .hea files", {'display':'none'}, [], [], [], [], None, None, "", "", "")
     
     dat_path = None
     hea_path = None
@@ -553,27 +699,30 @@ def process_ecg(n_clicks, contents, filenames):
             break
     
     if not dat_path:
-        return (None, "Could not find matching .dat/.hea pair", {'display':'none'}, [], [], "", "", "")
+        return (None, "Could not find matching .dat/.hea pair", {'display':'none'}, [], [], [], [], None, None, "", "", "")
     
     try:
         record = read_wfdb_files(dat_path, hea_path)
         signals, fs, lead_names = process_ecg_signals(record)
     except Exception as e:
-        return (None, f"Error processing ECG: {e}", {'display':'none'}, [], [], "", "", "")
+        return (None, f"Error processing ECG: {e}", {'display':'none'}, [], [], [], [], None, None, "", "", "")
     
-    # Store data
     ecg_data = {
         'signals': signals.tolist(),
         'fs': fs,
         'lead_names': lead_names,
     }
     
-    # Create channel options
-    display_leads = lead_names[:3] if len(lead_names) >= 3 else lead_names
-    channel_options = [{'label': f'ECG Lead {name}', 'value': i} for i, name in enumerate(display_leads)]
-    default_channels = [0] if len(display_leads) > 0 else []
+    # Create channel options for all channels
+    channel_options = [{'label': f'Channel {i+1}: {name}', 'value': i} for i, name in enumerate(lead_names)]
+    default_channels = list(range(min(3, len(lead_names))))
     
-    # Make prediction for all 6 abnormalities
+    # Reoccurrence channel options
+    reoccurrence_options = [{'label': f'Ch{i+1}: {name}', 'value': i} for i, name in enumerate(lead_names)]
+    default_x = 0 if len(lead_names) > 0 else None
+    default_y = 1 if len(lead_names) > 1 else None
+    
+    # Make prediction
     results, error_msg = predict_abnormalities(record.p_signal, record.fs, record.sig_name)
     
     if error_msg or results is None:
@@ -581,11 +730,9 @@ def process_ecg(n_clicks, contents, filenames):
         prediction_probs = html.Div("Model not available", style={'color': '#ccc', 'textAlign': 'center'})
         prediction_det = "Please ensure model file (model.hdf5) is in models/ directory"
     else:
-        # Find highest probability abnormality
         max_abnormality = max(results, key=results.get)
         max_prob = results[max_abnormality]
         
-        # Status message
         if max_prob > 0.5:
             prediction_result = html.Div(
                 f"⚠️ Detected: {max_abnormality}",
@@ -597,7 +744,6 @@ def process_ecg(n_clicks, contents, filenames):
                 style={'color': '#2ECC71'}
             )
         
-        # Create probability bars
         abnormality_names = {
             "1dAVb": "First-degree AV Block",
             "RBBB": "Right Bundle Branch Block",
@@ -653,7 +799,6 @@ def process_ecg(n_clicks, contents, filenames):
         
         prediction_probs = html.Div(prob_bars, style={'padding': '20px'})
         
-        # Details
         high_risk = [ab for ab, prob in results.items() if prob > 0.5]
         if high_risk:
             prediction_det = html.Div([
@@ -677,34 +822,86 @@ def process_ecg(n_clicks, contents, filenames):
             ])
     
     return (ecg_data, 
-            "✅ ECG processed successfully! Configure controls and click 'Start Streaming'",
+            "✅ ECG processed successfully! Configure controls and click 'Play'",
             {'display': 'block'},
             channel_options,
             default_channels,
+            reoccurrence_options,
+            reoccurrence_options,
+            default_x,
+            default_y,
             prediction_result,
             prediction_probs,
             prediction_det)
+
+# Toggle visibility of mode-specific controls
+@callback(
+    [Output('polar-mode-container', 'style'),
+     Output('colormap-container', 'style'),
+     Output('reoccurrence-channel-container', 'style')],
+    Input('graph-mode', 'value')
+)
+def toggle_mode_controls(graph_mode):
+    polar_style = {'display': 'block'} if graph_mode == 'polar' else {'display': 'none'}
+    colormap_style = {'display': 'block'} if graph_mode == 'reoccurrence' else {'display': 'none'}
+    reoccurrence_style = {'display': 'block'} if graph_mode == 'reoccurrence' else {'display': 'none'}
+    
+    return polar_style, colormap_style, reoccurrence_style
 
 @callback(
     [Output('stream-btn', 'children'),
      Output('interval-component', 'disabled'),
      Output('stream-state', 'data')],
-    Input('stream-btn', 'n_clicks'),
+    [Input('stream-btn', 'n_clicks'),
+     Input('pause-btn', 'n_clicks'),
+     Input('reset-btn', 'n_clicks')],
     State('stream-state', 'data')
 )
-def toggle_streaming(n_clicks, stream_state):
-    if n_clicks == 0:
-        return "Start Streaming", True, {'streaming': False, 'position': 0}
+def control_streaming(play_clicks, pause_clicks, reset_clicks, stream_state):
+    from dash import callback_context
+    
+    if not callback_context.triggered:
+        return "▶ Play", True, {'streaming': False, 'position': 0, 'polar_data': [], 'xor_chunks': []}
+    
+    button_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     
     if stream_state is None:
-        stream_state = {'streaming': False, 'position': 0}
+        stream_state = {'streaming': False, 'position': 0, 'polar_data': [], 'xor_chunks': []}
     
-    is_streaming = stream_state.get('streaming', False)
+    if button_id == 'stream-btn':
+        return "⏸ Pause", False, {**stream_state, 'streaming': True}
+    elif button_id == 'pause-btn':
+        return "▶ Play", True, {**stream_state, 'streaming': False}
+    elif button_id == 'reset-btn':
+        return "▶ Play", True, {'streaming': False, 'position': 0, 'polar_data': [], 'xor_chunks': []}
     
-    if is_streaming:
-        return "Start Streaming", True, {'streaming': False, 'position': 0}
-    else:
-        return "Stop Streaming", False, {'streaming': True, 'position': 0}
+    return "▶ Play", True, stream_state
+
+@callback(
+    Output('pan-clicks', 'data'),
+    [Input('pan-back-btn', 'n_clicks'),
+     Input('pan-forward-btn', 'n_clicks'),
+     Input('reset-btn', 'n_clicks')],
+    State('pan-clicks', 'data')
+)
+def update_pan_clicks(back, forward, reset, pan_data):
+    if pan_data is None:
+        pan_data = {'back': 0, 'forward': 0, 'reset': 0}
+    
+    from dash import callback_context
+    if not callback_context.triggered:
+        return pan_data
+    
+    button_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    
+    if button_id == 'pan-back-btn':
+        pan_data['back'] = back
+    elif button_id == 'pan-forward-btn':
+        pan_data['forward'] = forward
+    elif button_id == 'reset-btn':
+        pan_data['reset'] = reset
+    
+    return pan_data
 
 @callback(
     [Output('ecg-stream-graph', 'figure'),
@@ -712,202 +909,312 @@ def toggle_streaming(n_clicks, stream_state):
     [Input('interval-component', 'n_intervals'),
      Input('graph-mode', 'value'),
      Input('window-width', 'value'),
-     Input('channel-selection', 'value')],
+     Input('channel-selection', 'value'),
+     Input('speed-control', 'value'),
+     Input('zoom-control', 'value'),
+     Input('polar-mode', 'value'),
+     Input('colormap-selection', 'value'),
+     Input('reoccurrence-x-channel', 'value'),
+     Input('reoccurrence-y-channel', 'value'),
+     Input('pan-clicks', 'data')],
     [State('ecg-data-store', 'data'),
      State('stream-state', 'data')],
     prevent_initial_call=True
 )
-def update_stream(n_intervals, graph_mode, window_width, selected_channels, ecg_data, stream_state):
-    if ecg_data is None or not selected_channels:
+def update_stream(n_intervals, graph_mode, window_width, selected_channels, speed, zoom, 
+                  polar_mode, colormap, reoccurrence_x, reoccurrence_y, pan_clicks,
+                  ecg_data, stream_state):
+    
+    if ecg_data is None:
         return go.Figure(), stream_state
     
     signals = np.array(ecg_data['signals'])
     fs = ecg_data['fs']
     lead_names = ecg_data['lead_names']
     
-    # Limit to 3 displayed leads
-    display_lead_names = lead_names[:3]
-    
-    # Update streaming position
     if stream_state is None:
-        stream_state = {'streaming': True, 'position': 0}
+        stream_state = {'streaming': True, 'position': 0, 'polar_data': [], 'xor_chunks': []}
     
     position = stream_state.get('position', 0)
-    samples_per_update = int(fs * 0.1)  # 100ms of data
-    window_samples = int(window_width * fs)
+    is_streaming = stream_state.get('streaming', False)
     
-    # Calculate window
+    # Handle panning
+    from dash import callback_context
+    if callback_context.triggered:
+        trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+        if trigger_id == 'pan-clicks' and pan_clicks:
+            pan_amount = int(window_width * fs * 0.5)  # Pan by half window
+            if pan_clicks.get('back', 0) > stream_state.get('last_back', 0):
+                position = max(0, position - pan_amount)
+                stream_state['last_back'] = pan_clicks['back']
+            elif pan_clicks.get('forward', 0) > stream_state.get('last_forward', 0):
+                position = min(signals.shape[0] - int(window_width * fs), position + pan_amount)
+                stream_state['last_forward'] = pan_clicks['forward']
+            elif pan_clicks.get('reset', 0) > stream_state.get('last_reset', 0):
+                position = 0
+                stream_state = {'streaming': False, 'position': 0, 'polar_data': [], 'xor_chunks': []}
+                stream_state['last_reset'] = pan_clicks['reset']
+    
+    # Update position for streaming
+    if is_streaming:
+        samples_per_update = int(fs * 0.1 * speed)  # Speed multiplier
+        position += samples_per_update
+        
+        if position >= signals.shape[0]:
+            position = 0
+            stream_state['polar_data'] = []
+            stream_state['xor_chunks'] = []
+    
+    window_samples = int(window_width * fs)
     start = position
     end = min(position + window_samples, signals.shape[0])
     
-    # Loop if reached end
     if end >= signals.shape[0]:
         position = 0
         start = 0
         end = min(window_samples, signals.shape[0])
     
-    # Advance position
-    new_position = position + samples_per_update
-    if new_position >= signals.shape[0]:
-        new_position = 0
-    
     time_window = np.arange(start, end) / fs
     
+    # Generate appropriate visualization based on mode
     if graph_mode == 'waveform':
-        # Create waveform plot
-        n_channels = len(selected_channels)
-        fig = make_subplots(
-            rows=n_channels, cols=1,
-            subplot_titles=[f'{display_lead_names[ch]}' for ch in selected_channels if ch < len(display_lead_names)],
-            vertical_spacing=0.1,
-            shared_xaxes=True
-        )
-        
-        colors = ['#00d9ff', '#ff006e', '#8338ec']
-        for idx, ch in enumerate(selected_channels):
-            if ch < signals.shape[1]:
-                signal_window = signals[start:end, ch]
-                fig.add_trace(
-                    go.Scatter(
-                        x=time_window,
-                        y=signal_window,
-                        mode='lines',
-                        line=dict(color=colors[idx % 3], width=2),
-                        showlegend=False
-                    ),
-                    row=idx+1, col=1
-                )
-        
-        fig.update_layout(
-            title="ECG Waveform (Streaming)",
-            plot_bgcolor='#0f1626',
-            paper_bgcolor='#16213e',
-            font=dict(color='#00d9ff'),
-            height=600,
-            margin=dict(l=60, r=40, t=80, b=60)
-        )
-        
-        for i in range(n_channels):
-            fig.update_xaxes(gridcolor='#2a2a4e', row=i+1, col=1)
-            fig.update_yaxes(gridcolor='#2a2a4e', title_text="mV", row=i+1, col=1)
-        
-        fig.update_xaxes(title_text="Time (seconds)", row=n_channels, col=1)
+        # Default continuous-time signal viewer
+        if not selected_channels:
+            fig = go.Figure()
+        else:
+            n_channels = len(selected_channels)
+            fig = make_subplots(
+                rows=n_channels, cols=1,
+                subplot_titles=[f'{lead_names[ch]}' for ch in selected_channels if ch < len(lead_names)],
+                vertical_spacing=0.08,
+                shared_xaxes=True
+            )
+            
+            colors = ['#00d9ff', '#ff006e', '#8338ec', '#2a9d8f', '#e9c46a', '#f4a261']
+            for idx, ch in enumerate(selected_channels):
+                if ch < signals.shape[1]:
+                    signal_window = signals[start:end, ch] * zoom
+                    fig.add_trace(
+                        go.Scatter(
+                            x=time_window,
+                            y=signal_window,
+                            mode='lines',
+                            line=dict(color=colors[idx % len(colors)], width=2),
+                            showlegend=False,
+                            name=lead_names[ch] if ch < len(lead_names) else f'Ch {ch+1}'
+                        ),
+                        row=idx+1, col=1
+                    )
+            
+            fig.update_layout(
+                title=f"ECG Waveform - Continuous Time Viewer (Speed: {speed}x, Zoom: {zoom}x)",
+                plot_bgcolor='#0f1626',
+                paper_bgcolor='#16213e',
+                font=dict(color='#00d9ff'),
+                height=max(500, n_channels * 180),
+                margin=dict(l=60, r=40, t=80, b=60)
+            )
+            
+            for i in range(n_channels):
+                fig.update_xaxes(gridcolor='#2a2a4e', row=i+1, col=1)
+                fig.update_yaxes(gridcolor='#2a2a4e', title_text="Amplitude (mV)", row=i+1, col=1)
+            
+            fig.update_xaxes(title_text="Time (seconds)", row=n_channels, col=1)
+    
+    elif graph_mode == 'xor':
+        # XOR chunks visualization
+        if not selected_channels:
+            fig = go.Figure()
+        else:
+            chunk_samples = int(window_width * fs)
+            total_chunks = signals.shape[0] // chunk_samples
+            
+            # Collect all chunks up to current position
+            current_chunk_idx = position // chunk_samples
+            
+            n_channels = len(selected_channels)
+            fig = make_subplots(
+                rows=n_channels, cols=1,
+                subplot_titles=[f'{lead_names[ch]} - XOR Overlay' for ch in selected_channels if ch < len(lead_names)],
+                vertical_spacing=0.08,
+                shared_xaxes=True
+            )
+            
+            colors = ['#00d9ff', '#ff006e', '#8338ec', '#2a9d8f', '#e9c46a', '#f4a261']
+            
+            for idx, ch in enumerate(selected_channels):
+                if ch < signals.shape[1]:
+                    # Create XOR effect by overlaying chunks
+                    time_chunk = np.arange(chunk_samples) / fs
+                    
+                    # Start with zeros
+                    xor_result = np.zeros(chunk_samples)
+                    
+                    # XOR logic: if chunks overlap (similar values), they cancel out
+                    for chunk_i in range(min(current_chunk_idx + 1, total_chunks)):
+                        chunk_start = chunk_i * chunk_samples
+                        chunk_end = min(chunk_start + chunk_samples, signals.shape[0])
+                        chunk_data = signals[chunk_start:chunk_end, ch]
+                        
+                        if len(chunk_data) == chunk_samples:
+                            # Normalize chunk
+                            chunk_norm = (chunk_data - np.mean(chunk_data)) / (np.std(chunk_data) + 1e-8)
+                            
+                            # XOR operation: where signals are similar, they cancel
+                            xor_result = xor_result + chunk_norm - 2 * xor_result * (chunk_norm > 0)
+                    
+                    xor_result *= zoom
+                    
+                    fig.add_trace(
+                        go.Scatter(
+                            x=time_chunk[:len(xor_result)],
+                            y=xor_result,
+                            mode='lines',
+                            line=dict(color=colors[idx % len(colors)], width=2),
+                            fill='tonexty' if idx == 0 else None,
+                            showlegend=False
+                        ),
+                        row=idx+1, col=1
+                    )
+            
+            fig.update_layout(
+                title=f"XOR Chunks Viewer - Chunk {current_chunk_idx + 1}/{total_chunks} (Width: {window_width}s)",
+                plot_bgcolor='#0f1626',
+                paper_bgcolor='#16213e',
+                font=dict(color='#00d9ff'),
+                height=max(500, n_channels * 180),
+                margin=dict(l=60, r=40, t=80, b=60)
+            )
+            
+            for i in range(n_channels):
+                fig.update_xaxes(gridcolor='#2a2a4e', row=i+1, col=1)
+                fig.update_yaxes(gridcolor='#2a2a4e', title_text="XOR Amplitude", row=i+1, col=1)
+            
+            fig.update_xaxes(title_text="Time (seconds)", row=n_channels, col=1)
     
     elif graph_mode == 'polar':
-        # Create polar plot for selected channels
-        fig = go.Figure()
-        
-        colors = ['#00d9ff', '#ff006e', '#8338ec']
-        for idx, ch in enumerate(selected_channels):
-            if ch < signals.shape[1]:
-                signal_window = signals[start:end, ch]
-                theta = np.linspace(0, 360, len(signal_window))
-                
-                # Offset to ensure positive radius
-                r_min = np.min(signal_window)
-                r_offset = abs(r_min) + 0.1 if r_min < 0 else 0
-                r_values = signal_window + r_offset
-                
-                fig.add_trace(go.Scatterpolar(
-                    r=r_values,
-                    theta=theta,
-                    mode='lines',
-                    name=display_lead_names[ch] if ch < len(display_lead_names) else f'Lead {ch+1}',
-                    line=dict(color=colors[idx % 3], width=2)
-                ))
-        
-        fig.update_layout(
-            title="ECG Polar Representation (Streaming)",
-            polar=dict(
-                bgcolor='#0f1626',
-                radialaxis=dict(
-                    visible=True,
+        # Polar graph representation
+        if not selected_channels:
+            fig = go.Figure()
+        else:
+            fig = go.Figure()
+            
+            colors = ['#00d9ff', '#ff006e', '#8338ec', '#2a9d8f', '#e9c46a', '#f4a261']
+            
+            for idx, ch in enumerate(selected_channels):
+                if ch < signals.shape[1]:
+                    if polar_mode == 'cumulative':
+                        # Cumulative: show all data up to current position
+                        signal_data = signals[:end, ch] * zoom
+                        theta = np.linspace(0, 360 * (end / window_samples), len(signal_data))
+                    else:
+                        # Latest fixed time: show only current window
+                        signal_data = signals[start:end, ch] * zoom
+                        theta = np.linspace(0, 360, len(signal_data))
+                    
+                    # Ensure positive radius
+                    r_min = np.min(signal_data)
+                    r_offset = abs(r_min) + 0.5 if r_min < 0 else 0
+                    r_values = signal_data + r_offset
+                    
+                    fig.add_trace(go.Scatterpolar(
+                        r=r_values,
+                        theta=theta,
+                        mode='lines',
+                        name=lead_names[ch] if ch < len(lead_names) else f'Ch {ch+1}',
+                        line=dict(color=colors[idx % len(colors)], width=2)
+                    ))
+            
+            mode_text = "Cumulative" if polar_mode == 'cumulative' else "Latest Window"
+            fig.update_layout(
+                title=f"Polar Graph - {mode_text} (Zoom: {zoom}x)",
+                polar=dict(
+                    bgcolor='#0f1626',
+                    radialaxis=dict(
+                        visible=True,
+                        gridcolor='#2a2a4e',
+                        color='#00d9ff'
+                    ),
+                    angularaxis=dict(
+                        visible=True,
+                        gridcolor='#2a2a4e',
+                        color='#00d9ff',
+                        rotation=90,
+                        direction='clockwise'
+                    )
+                ),
+                paper_bgcolor='#16213e',
+                font=dict(color='#00d9ff'),
+                height=700,
+                showlegend=True,
+                legend=dict(
+                    bgcolor='#0f1626',
+                    bordercolor='#00d9ff',
+                    borderwidth=1
+                )
+            )
+    
+    elif graph_mode == 'reoccurrence':
+        # Reoccurrence scatter plot (cumulative)
+        if reoccurrence_x is None or reoccurrence_y is None:
+            fig = go.Figure()
+            fig.add_annotation(
+                text="Please select X and Y channels",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=20, color='#00d9ff')
+            )
+        elif reoccurrence_x >= signals.shape[1] or reoccurrence_y >= signals.shape[1]:
+            fig = go.Figure()
+        else:
+            # Cumulative scatter plot
+            x_data = signals[:end, reoccurrence_x] * zoom
+            y_data = signals[:end, reoccurrence_y] * zoom
+            
+            # Create 2D histogram for density representation
+            fig = go.Figure()
+            
+            fig.add_trace(go.Histogram2d(
+                x=x_data,
+                y=y_data,
+                colorscale=colormap,
+                showscale=True,
+                colorbar=dict(
+                    title="Density",
+                    titleside="right",
+                    tickfont=dict(color='#00d9ff'),
+                    titlefont=dict(color='#00d9ff')
+                ),
+                nbinsx=50,
+                nbinsy=50
+            ))
+            
+            x_name = lead_names[reoccurrence_x] if reoccurrence_x < len(lead_names) else f'Ch {reoccurrence_x+1}'
+            y_name = lead_names[reoccurrence_y] if reoccurrence_y < len(lead_names) else f'Ch {reoccurrence_y+1}'
+            
+            fig.update_layout(
+                title=f"Reoccurrence Graph - {x_name} vs {y_name} (Cumulative)",
+                plot_bgcolor='#0f1626',
+                paper_bgcolor='#16213e',
+                font=dict(color='#00d9ff'),
+                height=700,
+                xaxis=dict(
+                    title=f"{x_name} Amplitude",
                     gridcolor='#2a2a4e',
                     color='#00d9ff'
                 ),
-                angularaxis=dict(
-                    visible=True,
+                yaxis=dict(
+                    title=f"{y_name} Amplitude",
                     gridcolor='#2a2a4e',
                     color='#00d9ff'
-                )
-            ),
-            paper_bgcolor='#16213e',
-            font=dict(color='#00d9ff'),
-            height=600,
-            showlegend=True,
-            legend=dict(
-                bgcolor='#0f1626',
-                bordercolor='#00d9ff',
-                borderwidth=1
+                ),
+                margin=dict(l=80, r=80, t=80, b=80)
             )
-        )
-    
-    elif graph_mode == 'recurrence':
-        # Create recurrence plot for selected channels
-        n_channels = len(selected_channels)
-        
-        if n_channels == 1:
-            fig = go.Figure()
-            ch = selected_channels[0]
-            if ch < signals.shape[1]:
-                signal_window = signals[start:end, ch]
-                rp_data = generate_rp_data(signal_window)
-                
-                fig.add_trace(go.Heatmap(
-                    z=rp_data,
-                    colorscale='Viridis',
-                    showscale=True,
-                    colorbar=dict(
-                        title="Recurrence",
-                        titleside="right",
-                        tickfont=dict(color='#00d9ff'),
-                        titlefont=dict(color='#00d9ff')
-                    )
-                ))
-        else:
-            # Multiple recurrence plots in grid
-            cols = min(2, n_channels)
-            rows = (n_channels + cols - 1) // cols
-            
-            fig = make_subplots(
-                rows=rows, cols=cols,
-                subplot_titles=[display_lead_names[ch] if ch < len(display_lead_names) else f'Lead {ch+1}' 
-                               for ch in selected_channels],
-                vertical_spacing=0.1,
-                horizontal_spacing=0.1
-            )
-            
-            for idx, ch in enumerate(selected_channels):
-                row = idx // cols + 1
-                col = idx % cols + 1
-                
-                if ch < signals.shape[1]:
-                    signal_window = signals[start:end, ch]
-                    rp_data = generate_rp_data(signal_window)
-                    
-                    fig.add_trace(
-                        go.Heatmap(
-                            z=rp_data,
-                            colorscale='Viridis',
-                            showscale=False
-                        ),
-                        row=row, col=col
-                    )
-        
-        fig.update_layout(
-            title="Recurrence Plot (Streaming)",
-            plot_bgcolor='#0f1626',
-            paper_bgcolor='#16213e',
-            font=dict(color='#00d9ff'),
-            height=600,
-            margin=dict(l=40, r=40, t=80, b=40)
-        )
-        
-        # Remove axis labels for recurrence plots
-        fig.update_xaxes(showticklabels=False, showgrid=False)
-        fig.update_yaxes(showticklabels=False, showgrid=False)
     
     else:
         fig = go.Figure()
     
-    return fig, {'streaming': True, 'position': new_position}
+    # Update stream state
+    stream_state['position'] = position
+    
+    return fig, stream_state
