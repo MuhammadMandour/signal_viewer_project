@@ -30,7 +30,7 @@ home_layout = html.Div(
             "You can detect abnormalities, study patterns, and monitor vital signals in a user-friendly interface. \n"
             "- Sound: Dive into acoustic analysis through Doppler Shift detection and Radar signal processing. "
             "Analyze frequency shifts, speeds, and signal characteristics with precision and clarity. "
-            "Signal Viewer is designed to combine both medical and sound signal analysis in one seamless platform.",
+            "Signal Viewer is designed to combine both medical, sound, and satellite signal analysis in one seamless platform.",
             style={
                 'color': 'black',
                 'fontSize': '20px',
@@ -40,7 +40,7 @@ home_layout = html.Div(
             }
         ),
         html.Div(
-            style={'display': 'flex', 'justifyContent': 'center', 'gap': '30px'},
+            style={'display': 'flex', 'justifyContent': 'center', 'gap': '30px', 'flexWrap': 'wrap'},
             children=[
                 dcc.Link(html.Button("ECG", style={
                     'backgroundColor': '#023E8A',
@@ -81,6 +81,16 @@ home_layout = html.Div(
                     'border': 'none',
                     'cursor': 'pointer'
                 }), href='/doppler'),
+
+                dcc.Link(html.Button("InSAR Viewer", style={
+                    'backgroundColor': '#023E8A',
+                    'color': 'white',
+                    'borderRadius': '25px',
+                    'padding': '15px 40px',
+                    'fontSize': '18px',
+                    'border': 'none',
+                    'cursor': 'pointer'
+                }), href='/sar'),
             ]
         )
     ]
@@ -97,6 +107,7 @@ import pages.ecg_page
 import pages.eeg_page
 import pages.drone_page
 import pages.doppler_page
+import pages.SAR_page  # ✅ Added SAR page import
 
 # ---------------- Register Callbacks ----------------
 if hasattr(pages.eeg_page, 'register_callbacks'):
@@ -107,6 +118,9 @@ if hasattr(pages.drone_page, 'register_callbacks'):
 
 if hasattr(pages.doppler_page, 'register_callbacks'):
     pages.doppler_page.register_callbacks(app)
+
+if hasattr(pages.SAR_page, 'register_callbacks'):
+    pages.SAR_page.register_callbacks(app)  # ✅ Register SAR callbacks
 
 # ---------------- Router ----------------
 @app.callback(
@@ -122,6 +136,8 @@ def display_page(pathname):
         return pages.drone_page.layout
     elif pathname == '/doppler':
         return pages.doppler_page.layout
+    elif pathname == '/sar':  # ✅ New SAR route
+        return pages.SAR_page.layout
     else:
         return home_layout
 
