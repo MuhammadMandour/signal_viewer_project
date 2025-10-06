@@ -10,3 +10,4 @@ Pillow
 mne
 librosa
 tensorflow_hub
+seaborn
