@@ -10,4 +10,5 @@ Pillow
 mne
 librosa
 tensorflow_hub
-seaborn
+xarray
+netCDF4
