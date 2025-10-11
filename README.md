@@ -1,5 +1,4 @@
-Perfect — here’s a **clean, natural, professional README.md** for your **SAR (Sentinel-1 InSAR Viewer)** module.
-No emojis, no “AI-sounding” tone — just human, GitHub-style documentation.
+
 
 ---
 
