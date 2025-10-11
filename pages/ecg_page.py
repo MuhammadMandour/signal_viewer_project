@@ -623,68 +623,82 @@ def process_ecg_signals(record):
         fs_final = fs
     
     return processed_signals, fs_final, lead_names
-
 def apply_xor_to_chunks(signals, chunk_samples, current_position):
     """
-    Apply true XOR operation to signal chunks.
+    Apply XOR-like overlay to signal chunks where identical patterns cancel out.
     
-    XOR logic: 
-    - Where chunks have the same binary value → 0 (erased/canceled)
-    - Where chunks have different binary values → 1 (visible)
-    
-    Each chunk is binarized at 0.5 threshold after normalization.
-    Identical chunks will cancel out to zero.
+    Logic:
+    - Each chunk is normalized to [-1, 1]
+    - Chunks accumulate: if waveforms align (same polarity) → they reinforce
+    - If waveforms oppose (opposite polarity) → they cancel toward 0
+    - Identical chunks → flat line, different chunks → visible patterns
     """
     total_chunks = signals.shape[0] // chunk_samples
     current_chunk_idx = min(current_position // chunk_samples, total_chunks - 1)
     
-    # Collect all chunks up to current position (limit for performance)
-    chunks = []
-    max_chunks = min(current_chunk_idx + 1, 50)
+    if current_chunk_idx == 0:
+        # First chunk - normalize it
+        chunk_end = min(chunk_samples, signals.shape[0])
+        chunk_data = signals[:chunk_end]
+        
+        if len(chunk_data) < chunk_samples:
+            chunk_data = np.pad(chunk_data, (0, chunk_samples - len(chunk_data)), mode='constant')
+        
+        # Normalize to [-1, 1]
+        if np.std(chunk_data) > 1e-6:
+            chunk_norm = (chunk_data - np.mean(chunk_data)) / (np.std(chunk_data) * 3)
+            chunk_norm = np.clip(chunk_norm, -1, 1)
+        else:
+            chunk_norm = chunk_data * 0
+        
+        return chunk_norm
     
-    for chunk_i in range(max_chunks):
+    # Initialize with first chunk
+    chunk_end = min(chunk_samples, signals.shape[0])
+    first_chunk = signals[:chunk_end]
+    
+    if len(first_chunk) < chunk_samples:
+        first_chunk = np.pad(first_chunk, (0, chunk_samples - len(first_chunk)), mode='constant')
+    
+    if np.std(first_chunk) > 1e-6:
+        xor_accumulator = (first_chunk - np.mean(first_chunk)) / (np.std(first_chunk) * 3)
+        xor_accumulator = np.clip(xor_accumulator, -1, 1)
+    else:
+        xor_accumulator = first_chunk * 0
+    
+    # XOR overlay: multiply accumulated result by each new chunk
+    # Same polarity → positive product → they differ
+    # Opposite polarity → negative product → they cancel
+    # Limit to last 20 chunks for performance
+    start_chunk = max(1, current_chunk_idx - 19)
+    
+    for chunk_i in range(start_chunk, current_chunk_idx + 1):
         chunk_start = chunk_i * chunk_samples
         chunk_end = min(chunk_start + chunk_samples, signals.shape[0])
+        chunk_data = signals[chunk_start:chunk_end]
         
-        if chunk_end - chunk_start < chunk_samples:
-            # Pad incomplete chunk
-            chunk_data = np.zeros(chunk_samples)
-            chunk_data[:chunk_end - chunk_start] = signals[chunk_start:chunk_end]
+        if len(chunk_data) < chunk_samples:
+            chunk_data = np.pad(chunk_data, (0, chunk_samples - len(chunk_data)), mode='constant')
+        
+        # Normalize current chunk
+        if np.std(chunk_data) > 1e-6:
+            chunk_norm = (chunk_data - np.mean(chunk_data)) / (np.std(chunk_data) * 3)
+            chunk_norm = np.clip(chunk_norm, -1, 1)
         else:
-            chunk_data = signals[chunk_start:chunk_end]
+            chunk_norm = chunk_data * 0
         
-        # Normalize each chunk to [0, 1] range
-        if chunk_data.max() != chunk_data.min():
-            chunk_norm = (chunk_data - chunk_data.min()) / (chunk_data.max() - chunk_data.min())
-        else:
-            chunk_norm = chunk_data
+        # XOR-like operation: multiply and take absolute difference
+        # Where chunks match → low values, where they differ → high values
+        difference = np.abs(xor_accumulator - chunk_norm)
         
-        chunks.append(chunk_norm)
+        # Update accumulator with the difference
+        xor_accumulator = difference
     
-    if len(chunks) == 0:
-        return np.zeros(chunk_samples)
+    # Scale to [0, 1] for display
+    if np.max(xor_accumulator) > 0:
+        xor_accumulator = xor_accumulator / np.max(xor_accumulator)
     
-    # XOR operation: Start with first chunk
-    xor_result = chunks[0].copy()
-    
-    # Apply XOR with each subsequent chunk
-    for chunk in chunks[1:]:
-        # Binarize at threshold (0.5 for normalized data)
-        bin_result = (xor_result > 0.5).astype(int)
-        bin_chunk = (chunk > 0.5).astype(int)
-        
-        # XOR: same binary values → 0 (canceled), different values → 1 (visible)
-        xor_binary = np.logical_xor(bin_result, bin_chunk).astype(float)
-        
-        # Apply back to amplitude (keep amplitude where XOR is 1)
-        xor_result = xor_binary * np.abs(chunk - xor_result)
-    
-    # Normalize result for visualization
-    if xor_result.max() > 0:
-        xor_result = xor_result / xor_result.max()
-    
-    return xor_result
-
+    return xor_accumulator
 # ----------------- Callbacks -----------------
 
 @callback(
