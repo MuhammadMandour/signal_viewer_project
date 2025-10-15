@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 
 # pages/eeg_page.py - CORRECTED COMPLETE VERSION
+=======
+# pages/eeg_page.py - OPTIMIZED VERSION WITH FIXED PERFORMANCE
+>>>>>>> main
 
 from dash import html, dcc, Input, Output, State, callback_context, MATCH, ALL, no_update
 import os
@@ -11,10 +15,15 @@ import mne
 from PIL import Image
 import tensorflow as tf
 from scipy.signal import butter, filtfilt, welch
+<<<<<<< HEAD
 from scipy.spatial.distance import pdist, squareform
 import json
 import pandas as pd
 import io
+=======
+import json
+import pandas as pd
+>>>>>>> main
 
 # ----------------- Constants & Configuration -----------------
 os.makedirs("uploads", exist_ok=True)
@@ -22,7 +31,10 @@ os.makedirs("uploads", exist_ok=True)
 # EEG Model Configuration
 EEG_CONFIG_PATH = 'models/channel_standardized_eeg_config.json'
 EEG_MODEL_PATH = 'models/EEG_Model.h5'
+<<<<<<< HEAD
 EEG_2D_MODEL_PATH = 'models/EEG_2D_Model.h5'  # For 2D model
+=======
+>>>>>>> main
 
 # Load EEG model configuration
 try:
@@ -152,6 +164,7 @@ layout = html.Div(
                     id='viz-mode',
                     options=[
                         {'label': ' Default Continuous-Time Viewer', 'value': 'default'},
+<<<<<<< HEAD
                         {'label': ' XOR Overlay Graph (Identical Chunks Cancel)', 'value': 'xor'},
                         {'label': ' Polar Graph (Magnitude vs Time)', 'value': 'polar'},
                         {'label': ' Reoccurrence Graph (Channel X vs Channel Y)', 'value': 'reoccurrence'},
@@ -161,6 +174,16 @@ layout = html.Div(
                     inline=False,
                     style={'fontSize': '16px'},
                     labelStyle={'marginBottom': '10px', 'cursor': 'pointer', 'display': 'block'}
+=======
+                        {'label': ' XOR Graph', 'value': 'xor'},
+                        {'label': ' Polar Graph', 'value': 'polar'},
+                        {'label': ' Recurrence Graph', 'value': 'recurrence'}
+                    ],
+                    value='default',
+                    inline=True,
+                    style={'fontSize': '16px'},
+                    labelStyle={'marginRight': '20px', 'cursor': 'pointer'}
+>>>>>>> main
                 )
             ]
         ),
@@ -226,12 +249,20 @@ layout = html.Div(
                     ]
                 ),
                 
+<<<<<<< HEAD
                 # Playback Controls
+=======
+                # Playback Controls (for Default Viewer)
+>>>>>>> main
                 html.Div(
                     id='playback-controls-container',
                     style={'marginTop': '20px', 'padding': '15px', 'backgroundColor': '#F3F4F6', 'borderRadius': '10px'},
                     children=[
+<<<<<<< HEAD
                         html.H4("Playback Controls (Works with All Visualization Modes)", style={'marginBottom': '15px'}),
+=======
+                        html.H4("Playback Controls (Default Viewer)", style={'marginBottom': '15px'}),
+>>>>>>> main
                         html.Div(
                             style={'display': 'flex', 'alignItems': 'center', 'gap': '20px', 'flexWrap': 'wrap'},
                             children=[
@@ -368,20 +399,36 @@ layout = html.Div(
                             }
                         ),
                         
+<<<<<<< HEAD
                         html.Button(
                             "Detect from 2D Recurrence Plot",
                             id='detect-2d-btn',
                             n_clicks=0,
                             style={
                                 'backgroundColor': '#8B5CF6',
+=======
+                        # Placeholder for 2D model
+                        html.Button(
+                            "Detect from 2D Model (Coming Soon)",
+                            id='detect-2d-btn',
+                            n_clicks=0,
+                            disabled=True,
+                            style={
+                                'backgroundColor': '#9CA3AF',
+>>>>>>> main
                                 'color': 'white',
                                 'border': 'none',
                                 'borderRadius': '10px',
                                 'padding': '12px 25px',
                                 'fontSize': '16px',
                                 'fontWeight': 'bold',
+<<<<<<< HEAD
                                 'cursor': 'pointer',
                                 'boxShadow': '0 2px 8px rgba(139,92,246,0.3)'
+=======
+                                'cursor': 'not-allowed',
+                                'boxShadow': '0 2px 8px rgba(156,163,175,0.3)'
+>>>>>>> main
                             }
                         )
                     ]
@@ -389,20 +436,32 @@ layout = html.Div(
             ]
         ),
 
+<<<<<<< HEAD
         # Animation interval
         dcc.Interval(
             id='animation-interval',
             interval=100,  # Reduced for smoother animation
+=======
+        # Animation interval component - REDUCED FREQUENCY
+        dcc.Interval(
+            id='animation-interval',
+            interval=200,  # Increased from 100ms to 200ms
+>>>>>>> main
             disabled=True,
             n_intervals=0
         ),
 
+<<<<<<< HEAD
         # Results container with loading only for initial processing
+=======
+        # Loading Component
+>>>>>>> main
         dcc.Loading(
             id="loading-eeg-analysis",
             type="cube",
             color="#3B82F6",
             children=[
+<<<<<<< HEAD
                 html.Div(id='eeg-results-container')
             ]
         ),
@@ -428,6 +487,29 @@ layout = html.Div(
                             id='eeg-graph', 
                             config={'displayModeBar': False},
                             style={'transition': 'none'}  # Disable transitions for smoother updates
+=======
+                html.Div(id='eeg-results-container'),
+                
+                # Persistent visualization container with graph component
+                html.Div(
+                    id='eeg-visualizations',
+                    style={'marginTop': '20px'},
+                    children=[
+                        html.Div(
+                            id='viz-container',
+                            style={
+                                'backgroundColor': '#FFFFFF',
+                                'borderRadius': '15px',
+                                'padding': '20px',
+                                'boxShadow': '0 4px 15px rgba(0,0,0,0.1)',
+                                'marginBottom': '20px',
+                                'display': 'none'  # Hidden until data is processed
+                            },
+                            children=[
+                                html.H3(id='viz-title', style={'color': '#1E3A8A', 'marginBottom': '20px'}),
+                                dcc.Graph(id='eeg-graph', config={'displayModeBar': False})
+                            ]
+>>>>>>> main
                         )
                     ]
                 )
@@ -436,7 +518,11 @@ layout = html.Div(
 
         # Hidden stores
         dcc.Store(id='uploaded-eeg-data'),
+<<<<<<< HEAD
         dcc.Store(id='processed-eeg-data'),
+=======
+        dcc.Store(id='processed-eeg-data'),  # Stores metadata only
+>>>>>>> main
         dcc.Store(id='playback-state', data={'playing': False, 'position': 0, 'time_window': 10}),
 
         # Navigation
@@ -538,6 +624,7 @@ def create_default_viewer(data, fs, ch_names, selected_channels, time_window, st
     
     return fig
 
+<<<<<<< HEAD
 def create_xor_graph(data, fs, ch_names, selected_channels, chunk_size, n_chunks_to_show=None):
     """
     Create XOR overlay graph where identical chunks cancel out.
@@ -546,11 +633,16 @@ def create_xor_graph(data, fs, ch_names, selected_channels, chunk_size, n_chunks
     - If chunks differ → result is visible
     n_chunks_to_show: if specified, only process up to this many chunks (for animation)
     """
+=======
+def create_xor_graph(data, fs, ch_names, selected_channels, chunk_size):
+    """Create XOR graph"""
+>>>>>>> main
     channels = selected_channels if selected_channels else [0]
     chunk_samples = int(chunk_size * fs)
     
     fig = make_subplots(
         rows=len(channels), cols=1,
+<<<<<<< HEAD
         subplot_titles=[f"Channel {ch_names[ch_idx]} - XOR Overlay (Identical Chunks Erase)" for ch_idx in channels],
         shared_xaxes=True,
         vertical_spacing=0.08
@@ -558,10 +650,17 @@ def create_xor_graph(data, fs, ch_names, selected_channels, chunk_size, n_chunks
     
     time_axis = np.linspace(0, chunk_size, chunk_samples)
     
+=======
+        subplot_titles=[f"Channel {ch_names[ch_idx]} - XOR Differences" for ch_idx in channels],
+        shared_xaxes=True
+    )
+    
+>>>>>>> main
     for row_idx, ch_idx in enumerate(channels, start=1):
         channel_data = data[:, ch_idx]
         n_chunks = len(channel_data) // chunk_samples
         
+<<<<<<< HEAD
         if n_chunks == 0:
             continue
         
@@ -626,22 +725,60 @@ def create_xor_graph(data, fs, ch_names, selected_channels, chunk_size, n_chunks
         xaxis_title="Time within chunk (seconds)",
         yaxis_title="XOR Amplitude (0 = cancelled)",
         height=600 * len(channels),
+=======
+        time_axis = np.linspace(0, chunk_size, chunk_samples)
+        
+        if n_chunks > 0:
+            reference_chunk = channel_data[:chunk_samples]
+            
+            for i in range(min(n_chunks, 20)):
+                chunk = channel_data[i*chunk_samples:(i+1)*chunk_samples]
+                if len(chunk) == chunk_samples:
+                    xor_result = chunk - reference_chunk
+                    
+                    if np.abs(xor_result).max() > 0.1 * np.abs(chunk).max():
+                        fig.add_trace(
+                            go.Scatter(
+                                x=time_axis,
+                                y=xor_result,
+                                mode='lines',
+                                name=f'Chunk {i+1}',
+                                line=dict(width=1),
+                                showlegend=(row_idx == 1 and i < 5)
+                            ),
+                            row=row_idx, col=1
+                        )
+                    
+                    reference_chunk = chunk
+    
+    fig.update_layout(
+        title=f"XOR Graph - Differences Between Chunks (Chunk Size: {chunk_size}s)",
+        xaxis_title="Time within chunk (seconds)",
+        yaxis_title="XOR Difference",
+        height=400 * len(channels),
+>>>>>>> main
         template='plotly_white'
     )
     
     return fig
 
+<<<<<<< HEAD
 def create_polar_graph(data, fs, ch_names, selected_channels, time_window, mode='rolling', animation_position=None):
     """
     Create polar graph where r = magnitude and theta = time
     animation_position: if specified, shows data up to this time point (for animation)
     """
+=======
+def create_polar_graph(data, fs, ch_names, selected_channels, time_window, mode='rolling'):
+    """Create polar graph"""
+>>>>>>> main
     channels = selected_channels if selected_channels else [0]
     
     fig = go.Figure()
     
     for ch_idx in channels:
         if mode == 'rolling':
+<<<<<<< HEAD
             # Latest fixed time window
             n_samples = int(time_window * fs)
             if animation_position is not None:
@@ -660,6 +797,13 @@ def create_polar_graph(data, fs, ch_names, selected_channels, time_window, mode=
             else:
                 channel_data = data[:, ch_idx]
             # Wrap around multiple times if data is longer than time window
+=======
+            n_samples = int(time_window * fs)
+            channel_data = data[-n_samples:, ch_idx]
+            theta = np.linspace(0, 360, len(channel_data))
+        else:
+            channel_data = data[:, ch_idx]
+>>>>>>> main
             theta = np.linspace(0, 360 * (len(channel_data) / (time_window * fs)), len(channel_data))
         
         fig.add_trace(go.Scatterpolar(
@@ -671,6 +815,7 @@ def create_polar_graph(data, fs, ch_names, selected_channels, time_window, mode=
         ))
     
     mode_text = "Rolling Window" if mode == 'rolling' else "Cumulative"
+<<<<<<< HEAD
     pos_text = f" (Position: {animation_position:.1f}s)" if animation_position is not None else ""
     fig.update_layout(
         title=f"Polar Graph: r=Magnitude, θ=Time ({mode_text} Mode){pos_text}",
@@ -679,10 +824,17 @@ def create_polar_graph(data, fs, ch_names, selected_channels, time_window, mode=
             radialaxis=dict(showticklabels=True, ticks='outside'),
             angularaxis=dict(showticklabels=True, ticks='outside')
         )
+=======
+    fig.update_layout(
+        title=f"Polar Graph EEG Visualization ({mode_text} Mode)",
+        height=600,
+        polar=dict(radialaxis=dict(showticklabels=True, ticks='outside'))
+>>>>>>> main
     )
     
     return fig
 
+<<<<<<< HEAD
 def create_reoccurrence_graph(data, fs, ch_names, selected_channels, colormap, animation_position=None):
     """
     Create reoccurrence graph: cumulative scatter plot of chX vs chY
@@ -711,11 +863,27 @@ def create_reoccurrence_graph(data, fs, ch_names, selected_channels, colormap, a
     fig = go.Figure()
     
     # Cumulative scatter plot with time-based coloring
+=======
+def create_recurrence_graph(data, fs, ch_names, selected_channels, colormap):
+    """Create recurrence graph"""
+    if not selected_channels or len(selected_channels) < 2:
+        ch_x, ch_y = 0, 1
+    else:
+        ch_x, ch_y = selected_channels[0], selected_channels[1]
+    
+    max_samples = min(5000, len(data))
+    data_x = data[:max_samples, ch_x]
+    data_y = data[:max_samples, ch_y]
+    
+    fig = go.Figure()
+    
+>>>>>>> main
     fig.add_trace(go.Scatter(
         x=data_x,
         y=data_y,
         mode='markers',
         marker=dict(
+<<<<<<< HEAD
             size=4,
             color=np.arange(len(data_x)),
             colorscale=colormap,
@@ -868,6 +1036,27 @@ def generate_recurrence_plot_image(data, fs, ch_idx=0, size=(128, 128)):
     
     return recurrence.astype(np.float32)
 
+=======
+            size=2,
+            color=np.arange(len(data_x)),
+            colorscale=colormap,
+            showscale=True,
+            colorbar=dict(title="Time")
+        ),
+        name='Recurrence'
+    ))
+    
+    fig.update_layout(
+        title=f"Recurrence Graph: {ch_names[ch_x]} vs {ch_names[ch_y]}",
+        xaxis_title=f"Channel {ch_names[ch_x]} Amplitude",
+        yaxis_title=f"Channel {ch_names[ch_y]} Amplitude",
+        height=600,
+        template='plotly_white'
+    )
+    
+    return fig
+
+>>>>>>> main
 def create_eeg_windows(data, fs, win_sec=1.0, step_sec=0.8):
     """Create sliding windows from EEG data"""
     win_samples = int(win_sec * fs)
@@ -903,8 +1092,14 @@ def standardize_channels(data, target_channels=16):
             return data[:, :target_channels]
 
 def perform_disease_detection(processed_path, fs):
+<<<<<<< HEAD
     """Perform AI-based disease detection from 1D multi-channel model"""
     try:
+=======
+    """Perform AI-based disease detection - loads from disk only once"""
+    try:
+        # Load processed data from disk
+>>>>>>> main
         eeg_filtered = np.load(processed_path)
         
         model = tf.keras.models.load_model(EEG_MODEL_PATH)
@@ -978,6 +1173,10 @@ def perform_disease_detection(processed_path, fs):
                 html.Div([
                     html.P(f"Analyzed {len(windows)} time windows"),
                     html.P(f"Model Type: 1D Multi-Channel Time-Series CNN"),
+<<<<<<< HEAD
+=======
+                    html.P(f"Model Version: {EEG_CONFIG.get('model_version', '1.0')}"),
+>>>>>>> main
                     html.P("This is for educational purposes only. Consult healthcare professionals for medical diagnosis.")
                 ], style={'fontSize': '14px', 'color': '#6B7280'})
             ]
@@ -999,6 +1198,7 @@ def perform_disease_detection(processed_path, fs):
             ]
         )
 
+<<<<<<< HEAD
 def perform_2d_disease_detection(processed_path, fs):
     """Perform AI-based disease detection from 2D recurrence plot model"""
     try:
@@ -1114,6 +1314,8 @@ def perform_2d_disease_detection(processed_path, fs):
             ]
         )
 
+=======
+>>>>>>> main
 # ----------------- Callback Registration Function -----------------
 def register_callbacks(app):
     """Register callbacks with the app instance"""
@@ -1121,7 +1323,11 @@ def register_callbacks(app):
     print("REGISTERING EEG PAGE CALLBACKS")
     print("="*60 + "\n")
     
+<<<<<<< HEAD
     # Callback 1: File upload
+=======
+    # Callback 1: File upload - only handles upload
+>>>>>>> main
     @app.callback(
         Output('eeg-file-status', 'children'),
         Output('uploaded-eeg-data', 'data'),
@@ -1133,6 +1339,10 @@ def register_callbacks(app):
         print("\n=== FILE UPLOAD CALLBACK TRIGGERED ===")
         
         if not contents:
+<<<<<<< HEAD
+=======
+            print("No file uploaded yet")
+>>>>>>> main
             return "No file uploaded yet", None, []
         
         try:
@@ -1141,12 +1351,25 @@ def register_callbacks(app):
             file_path = f"uploads/{filename}"
             with open(file_path, "wb") as f:
                 f.write(base64.b64decode(data))
+<<<<<<< HEAD
             
             _, _, ch_names = load_eeg_data(file_path)
+=======
+            print(f"FILE SAVED TO: {file_path}")
+            
+            print("READING CHANNEL NAMES...")
+            _, _, ch_names = load_eeg_data(file_path)
+            print(f"FOUND {len(ch_names)} CHANNELS")
+            
+>>>>>>> main
             options = [{'label': f'Channel {i+1}: {ch_names[i]}', 'value': i} 
                       for i in range(len(ch_names))]
             
             uploaded_data = {'filename': filename}
+<<<<<<< HEAD
+=======
+            print(f"FILE UPLOAD COMPLETE - Data stored: {uploaded_data}")
+>>>>>>> main
             
             return html.Div([
                 f"File uploaded: {filename}",
@@ -1156,13 +1379,22 @@ def register_callbacks(app):
             
         except Exception as e:
             print(f"FILE UPLOAD ERROR: {e}")
+<<<<<<< HEAD
+=======
+            import traceback
+            print(traceback.format_exc())
+>>>>>>> main
             return html.Div([
                 f"File uploaded: {filename}",
                 html.Br(),
                 html.Small(f"Error: {str(e)}", style={'color': '#DC2626'})
             ]), {'filename': filename}, []
     
+<<<<<<< HEAD
     # Callback 2: Process EEG
+=======
+    # Callback 2: Process EEG - only runs when process button clicked
+>>>>>>> main
     @app.callback(
         Output('processed-eeg-data', 'data'),
         Output('eeg-results-container', 'children'),
@@ -1180,11 +1412,16 @@ def register_callbacks(app):
         print("\n=== PROCESS EEG BUTTON CLICKED ===")
         
         if not uploaded_data or n_clicks == 0:
+<<<<<<< HEAD
+=======
+            print("ERROR: No uploaded data or n_clicks=0")
+>>>>>>> main
             return None, "", {}, "", {'display': 'none'}
         
         try:
             filename = uploaded_data['filename']
             file_path = f"uploads/{filename}"
+<<<<<<< HEAD
             
             eeg_data, fs, ch_names = load_eeg_data(file_path)
             eeg_filtered = bandpass_filter_eeg(eeg_data, fs)
@@ -1192,6 +1429,26 @@ def register_callbacks(app):
             processed_path = f"uploads/processed_{filename}.npy"
             np.save(processed_path, eeg_filtered)
             
+=======
+            print(f"PROCESSING: {filename}")
+            
+            # Load and process data ONCE
+            print("LOADING EEG DATA...")
+            eeg_data, fs, ch_names = load_eeg_data(file_path)
+            print(f"LOADED: {len(eeg_data)} samples, {len(ch_names)} channels, {fs} Hz")
+            
+            print("APPLYING BANDPASS FILTER...")
+            eeg_filtered = bandpass_filter_eeg(eeg_data, fs)
+            print("FILTER APPLIED")
+            
+            # Save processed data to disk
+            processed_path = f"uploads/processed_{filename}.npy"
+            print(f"SAVING TO: {processed_path}")
+            np.save(processed_path, eeg_filtered)
+            print("SAVED SUCCESSFULLY")
+            
+            # Store only metadata, not the actual data
+>>>>>>> main
             metadata = {
                 'filename': filename,
                 'processed_path': processed_path,
@@ -1200,6 +1457,10 @@ def register_callbacks(app):
                 'n_samples': int(len(eeg_filtered)),
                 'duration': float(len(eeg_filtered) / fs)
             }
+<<<<<<< HEAD
+=======
+            print(f"METADATA: Duration={metadata['duration']:.2f}s")
+>>>>>>> main
             
             results = html.Div(
                 style={
@@ -1219,7 +1480,13 @@ def register_callbacks(app):
                 ]
             )
             
+<<<<<<< HEAD
             time_window = time_window or 10
+=======
+            # Create initial visualization
+            time_window = time_window or 10
+            print(f"CREATING INITIAL VISUALIZATION: {viz_mode}, window={time_window}s")
+>>>>>>> main
             
             if viz_mode == 'default':
                 fig = create_default_viewer(eeg_filtered, fs, ch_names, selected_channels, time_window, 0)
@@ -1227,10 +1494,17 @@ def register_callbacks(app):
                 fig = create_xor_graph(eeg_filtered, fs, ch_names, selected_channels, 5)
             elif viz_mode == 'polar':
                 fig = create_polar_graph(eeg_filtered, fs, ch_names, selected_channels, time_window, 'rolling')
+<<<<<<< HEAD
             elif viz_mode == 'reoccurrence':
                 fig = cr(eeg_filtered, fs, ch_names, selected_channels, 'Viridis')
             elif viz_mode == 'recurrence':
                 fig = create_recurrence_plot(eeg_filtered, fs, ch_names, selected_channels, 'Viridis')
+=======
+            elif viz_mode == 'recurrence':
+                fig = create_recurrence_graph(eeg_filtered, fs, ch_names, selected_channels, 'Viridis')
+            
+            print("INITIAL VISUALIZATION CREATED")
+>>>>>>> main
             
             viz_title = f"{viz_mode.upper()} Mode Visualization"
             viz_style = {
@@ -1242,10 +1516,19 @@ def register_callbacks(app):
                 'display': 'block'
             }
             
+<<<<<<< HEAD
+=======
+            print("PROCESSING COMPLETE - RETURNING RESULTS")
+>>>>>>> main
             return metadata, results, fig, viz_title, viz_style
             
         except Exception as e:
             import traceback
+<<<<<<< HEAD
+=======
+            print(f"PROCESSING ERROR: {e}")
+            print(traceback.format_exc())
+>>>>>>> main
             error_msg = html.Div(
                 style={
                     'backgroundColor': '#FEF2F2',
@@ -1263,7 +1546,11 @@ def register_callbacks(app):
             )
             return None, error_msg, {}, "", {'display': 'none'}
     
+<<<<<<< HEAD
     # Callback 3: 1D Disease Detection
+=======
+    # Callback 3: Disease Detection - separate from visualization
+>>>>>>> main
     @app.callback(
         Output('eeg-results-container', 'children', allow_duplicate=True),
         Input('detect-disease-btn', 'n_clicks'),
@@ -1278,6 +1565,10 @@ def register_callbacks(app):
         try:
             disease_results = perform_disease_detection(metadata['processed_path'], metadata['fs'])
             
+<<<<<<< HEAD
+=======
+            # Append disease results to current results
+>>>>>>> main
             if current_results:
                 if isinstance(current_results, list):
                     return current_results + [disease_results]
@@ -1297,7 +1588,11 @@ def register_callbacks(app):
                     'marginTop': '20px'
                 },
                 children=[
+<<<<<<< HEAD
                     html.H4("1D Detection Error"),
+=======
+                    html.H4("Detection Error"),
+>>>>>>> main
                     html.P(f"Error: {str(e)}")
                 ]
             )
@@ -1308,6 +1603,7 @@ def register_callbacks(app):
                     return [current_results, error_msg]
             return error_msg
     
+<<<<<<< HEAD
     # Callback 4: 2D Disease Detection
     @app.callback(
         Output('eeg-results-container', 'children', allow_duplicate=True),
@@ -1354,6 +1650,9 @@ def register_callbacks(app):
             return error_msg
     
     # Callback 5: Play/Pause control
+=======
+    # Callback 4: Play/Pause control - ONLY ENABLE IF DATA IS PROCESSED
+>>>>>>> main
     @app.callback(
         Output('animation-interval', 'disabled'),
         Output('play-pause-btn', 'children'),
@@ -1362,11 +1661,46 @@ def register_callbacks(app):
         Input('play-pause-btn', 'n_clicks'),
         State('playback-state', 'data'),
         State('processed-eeg-data', 'data'),
+<<<<<<< HEAD
         prevent_initial_call=True
     )
     def toggle_playback(n_clicks, state, metadata):
         if not metadata:
+=======
+        State('viz-mode', 'value'),
+        prevent_initial_call=True
+    )
+    def toggle_playback(n_clicks, state, metadata, viz_mode):
+        print("\n=== PLAY/PAUSE BUTTON CLICKED ===")
+        print(f"Current state: {state}")
+        print(f"Metadata available: {metadata is not None}")
+        print(f"Viz mode: {viz_mode}")
+        
+        # Check if data is processed
+        if not metadata:
+            print("ERROR: Cannot play - no processed data!")
+>>>>>>> main
             return True, "Play (Process EEG First)", {
+                'backgroundColor': '#9CA3AF',
+                'color': 'white',
+                'border': 'none',
+                'borderRadius': '8px',
+                'padding': '10px 20px',
+                'cursor': 'not-allowed',
+                'fontWeight': 'bold'
+            }, state
+        
+<<<<<<< HEAD
+        is_playing = state.get('playing', False)
+        new_state = not is_playing
+        
+        if new_state:
+            state['playing'] = True
+=======
+        # Check if in default mode
+        if viz_mode != 'default':
+            print("ERROR: Play only works in Default mode")
+            return True, "Play (Default Mode Only)", {
                 'backgroundColor': '#9CA3AF',
                 'color': 'white',
                 'border': 'none',
@@ -1379,8 +1713,12 @@ def register_callbacks(app):
         is_playing = state.get('playing', False)
         new_state = not is_playing
         
+        print(f"Was playing: {is_playing}, Now playing: {new_state}")
+        
         if new_state:
             state['playing'] = True
+            print("STARTING PLAYBACK")
+>>>>>>> main
             return False, "Pause", {
                 'backgroundColor': '#EF4444',
                 'color': 'white',
@@ -1392,6 +1730,10 @@ def register_callbacks(app):
             }, state
         else:
             state['playing'] = False
+<<<<<<< HEAD
+=======
+            print("STOPPING PLAYBACK")
+>>>>>>> main
             return True, "Play", {
                 'backgroundColor': '#10B981',
                 'color': 'white',
@@ -1402,7 +1744,11 @@ def register_callbacks(app):
                 'fontWeight': 'bold'
             }, state
     
+<<<<<<< HEAD
     # Callback 6: Update visualization
+=======
+    # Callback 5: Update visualization - optimized without page refresh
+>>>>>>> main
     @app.callback(
         Output('eeg-graph', 'figure', allow_duplicate=True),
         Output('viz-title', 'children', allow_duplicate=True),
@@ -1427,11 +1773,19 @@ def register_callbacks(app):
                            metadata, selected_channels, time_window, chunk_size, 
                            colormap, polar_mode, speed, playback_state):
         
+<<<<<<< HEAD
         if not metadata:
+=======
+        print("\n=== VISUALIZATION CALLBACK TRIGGERED ===")
+        
+        if not metadata:
+            print("ERROR: No metadata available - skipping update")
+>>>>>>> main
             return no_update, no_update, playback_state
         
         ctx = callback_context
         if not ctx.triggered:
+<<<<<<< HEAD
             return no_update, no_update, playback_state
         
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -1442,38 +1796,86 @@ def register_callbacks(app):
                 if not playback_state.get('playing', False):
                     return no_update, no_update, playback_state
             
+=======
+            print("ERROR: No trigger context")
+            return no_update, no_update, playback_state
+        
+        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        print(f"TRIGGER: {button_id}")
+        
+        try:
+            # IMPORTANT: Only update for animation if in default mode and playing
+            if button_id == 'animation-interval':
+                if viz_mode != 'default':
+                    print("SKIP: Animation only works in default mode")
+                    return no_update, no_update, playback_state
+                
+                if not playback_state.get('playing', False):
+                    print("SKIP: Not playing")
+                    return no_update, no_update, playback_state
+            
+            # Load processed data from disk
+            print(f"LOADING: {metadata['processed_path']}")
+>>>>>>> main
             eeg_filtered = np.load(metadata['processed_path'])
             fs = metadata['fs']
             ch_names = metadata['ch_names']
             
+<<<<<<< HEAD
+=======
+            # Update playback state
+>>>>>>> main
             position = playback_state.get('position', 0)
             time_window = time_window or playback_state.get('time_window', 10)
             playback_state['time_window'] = time_window
             
+<<<<<<< HEAD
             # Update position based on button clicks or animation
+=======
+            # Handle different triggers
+>>>>>>> main
             if button_id == 'animation-interval' and playback_state.get('playing', False):
                 position += (speed * 0.2)
                 max_position = metadata['duration'] - time_window
                 if position > max_position:
                     position = 0
+<<<<<<< HEAD
                 playback_state['position'] = position
+=======
+                    print("LOOP: Resetting to start")
+                playback_state['position'] = position
+                print(f"POSITION: {position:.2f}s")
+>>>>>>> main
             
             elif button_id == 'pan-left-btn':
                 position = max(0, position - 1)
                 playback_state['position'] = position
+<<<<<<< HEAD
+=======
+                print(f"PAN LEFT: {position:.2f}s")
+>>>>>>> main
             
             elif button_id == 'pan-right-btn':
                 max_position = metadata['duration'] - time_window
                 position = min(max_position, position + 1)
                 playback_state['position'] = position
+<<<<<<< HEAD
+=======
+                print(f"PAN RIGHT: {position:.2f}s")
+>>>>>>> main
             
             elif button_id == 'zoom-in-btn':
                 time_window = max(1, time_window - 2)
                 playback_state['time_window'] = time_window
+<<<<<<< HEAD
+=======
+                print(f"ZOOM IN: {time_window}s")
+>>>>>>> main
             
             elif button_id == 'zoom-out-btn':
                 time_window = min(60, time_window + 2)
                 playback_state['time_window'] = time_window
+<<<<<<< HEAD
             
             # Create visualizations based on mode
             # Pass animation position to all modes for consistent animation
@@ -1504,10 +1906,35 @@ def register_callbacks(app):
             
             viz_title = f"{viz_mode.upper()} Mode Visualization"
             
+=======
+                print(f"ZOOM OUT: {time_window}s")
+            
+            # Create visualization figure only
+            print(f"UPDATING FIGURE: {viz_mode}")
+            if viz_mode == 'default':
+                fig = create_default_viewer(eeg_filtered, fs, ch_names, selected_channels, 
+                                          time_window, position)
+            elif viz_mode == 'xor':
+                fig = create_xor_graph(eeg_filtered, fs, ch_names, selected_channels, chunk_size or 5)
+            elif viz_mode == 'polar':
+                fig = create_polar_graph(eeg_filtered, fs, ch_names, selected_channels, 
+                                       time_window, polar_mode)
+            elif viz_mode == 'recurrence':
+                fig = create_recurrence_graph(eeg_filtered, fs, ch_names, selected_channels, 
+                                            colormap or 'Viridis')
+            
+            viz_title = f"{viz_mode.upper()} Mode Visualization"
+            
+            print("FIGURE UPDATED")
+>>>>>>> main
             return fig, viz_title, playback_state
             
         except Exception as e:
             import traceback
             print(f"VISUALIZATION ERROR: {e}")
             print(traceback.format_exc())
+<<<<<<< HEAD
             return no_update, no_update, playback_state
+=======
+            return no_update, no_update, playback_state
+>>>>>>> main

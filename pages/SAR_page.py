@@ -140,7 +140,11 @@ layout = html.Div(
 def process_insar_file(file_path):
     ds = xr.open_dataset(file_path, group='science/grids/data')
     unwrapped_phase = ds['unwrappedPhase']
+<<<<<<< HEAD
     wavelength = 0.056  # Sentinel-1 C-band microwave
+=======
+    wavelength = 0.056  # Sentinel-1 C-band
+>>>>>>> main
     displacement = (unwrapped_phase * wavelength) / (4 * np.pi)
     return displacement
 def create_displacement_plot(displacement):
