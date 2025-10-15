@@ -43,16 +43,28 @@ CLASS_INFO = {
         'color': '#2E8B57'
     }
 }
+<<<<<<< HEAD
+# ----------------- Layout -----------------
+layout = html.Div(
+    style={
+        'backgroundColor': '#F0F8FF',
+        'fontFamily': 'Arial, sans-serif',
+=======
 
 # ----------------- Layout -----------------
 layout = html.Div(
     style={
         'backgroundColor': '#F0F8FF', 
         'fontFamily': 'Arial, sans-serif', 
+>>>>>>> main
         'minHeight': '100vh',
         'padding': '20px'
     },
     children=[
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
         # Header Section
         html.Div(
             style={'textAlign': 'center', 'marginBottom': '40px'},
@@ -114,12 +126,25 @@ layout = html.Div(
                     multiple=False
                 ),
 
+<<<<<<< HEAD
+                html.Div(
+                    id='drone-file-status',
+                    style={
+                        'marginTop': '15px',
+                        'fontSize': '16px',
+                        'color': '#374151',
+                        'textAlign': 'center'
+                    },
+                    children="No file uploaded yet"
+                )
+=======
                 html.Div(id='drone-file-status', style={
                     'marginTop': '15px', 
                     'fontSize': '16px', 
                     'color': '#374151',
                     'textAlign': 'center'
                 }, children="No file uploaded yet")
+>>>>>>> main
             ]
         ),
 
@@ -136,8 +161,15 @@ layout = html.Div(
                 html.H3("Analysis Parameters", style={'color': '#1E3A8A', 'marginBottom': '20px'}),
 
                 html.Div(
+<<<<<<< HEAD
+                    style={'display': 'grid', 'gridTemplateColumns': '1fr 1fr 1fr 1fr', 'gap': '20px'},
+                    children=[
+
+                        # Window size
+=======
                     style={'display': 'grid', 'gridTemplateColumns': '1fr 1fr 1fr', 'gap': '20px'},
                     children=[
+>>>>>>> main
                         html.Div([
                             html.Label("Window Size (seconds):", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                             dcc.Input(
@@ -155,6 +187,11 @@ layout = html.Div(
                                 }
                             )
                         ]),
+<<<<<<< HEAD
+
+                        # Hop size
+=======
+>>>>>>> main
                         html.Div([
                             html.Label("Hop Size (seconds):", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                             dcc.Input(
@@ -172,6 +209,11 @@ layout = html.Div(
                                 }
                             )
                         ]),
+<<<<<<< HEAD
+
+                        # Threshold
+=======
+>>>>>>> main
                         html.Div([
                             html.Label("Threshold:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                             dcc.Input(
@@ -188,6 +230,27 @@ layout = html.Div(
                                     'border': '1px solid #D1D5DB'
                                 }
                             )
+<<<<<<< HEAD
+                        ]),
+
+                        # ✅ Sampling Rate Slider
+                        html.Div([
+                            html.Label("Sampling Rate (Hz):", style={'fontWeight': 'bold', 'marginBottom': '8px', 'display': 'block'}),
+                            dcc.Slider(
+                                id='sample-rate-slider',
+                                min=100,
+                                max=50000,
+                                step=1,
+                                value=16000,
+                                marks={
+                                    100:'Hundred',
+                                    
+                                    25000: '25k'
+                                },
+                                tooltip={"placement": "bottom", "always_visible": True}
+                            )
+=======
+>>>>>>> main
                         ])
                     ]
                 )
@@ -231,12 +294,20 @@ layout = html.Div(
             ]
         ),
 
+<<<<<<< HEAD
+        # Loading Component + Results + Visualization
+=======
         # Loading Component
+>>>>>>> main
         dcc.Loading(
             id="loading-drone-analysis",
             type="cube",
             color="#3B82F6",
             children=[
+<<<<<<< HEAD
+                html.Div(id='drone-player-container'),
+                html.Div(id='drone-results-container'),
+=======
                 # Audio Player Section
                 html.Div(id='drone-player-container'),
 
@@ -244,11 +315,16 @@ layout = html.Div(
                 html.Div(id='drone-results-container'),
 
                 # Visualization Section
+>>>>>>> main
                 html.Div(id='drone-visualizations')
             ]
         ),
 
+<<<<<<< HEAD
+        # Hidden Store
+=======
         # Hidden store for uploaded data
+>>>>>>> main
         dcc.Store(id='uploaded-drone-data'),
 
         # Navigation
@@ -269,7 +345,11 @@ layout = html.Div(
                             'cursor': 'pointer',
                             'boxShadow': '0 2px 8px rgba(99,102,241,0.3)'
                         }
+<<<<<<< HEAD
+                    ),
+=======
                     ), 
+>>>>>>> main
                     href='/'
                 )
             ]
@@ -277,14 +357,59 @@ layout = html.Div(
     ]
 )
 
+<<<<<<< HEAD
+
+# ----------------- Audio Processing Functions -----------------
+
+def load_full_audio(file_path, sr):
+=======
 # ----------------- Audio Processing Functions -----------------
 
 def load_full_audio(file_path, sr=16000):
     """Load full audio file"""
+>>>>>>> main
     audio, _ = librosa.load(file_path, sr=sr, mono=True)
     return audio
 
 
+<<<<<<< HEAD
+
+def sliding_window(audio, sr, window_sec=1.0, hop_sec=0.5):
+    window_size = int(window_sec * sr)
+    hop_size = int(hop_sec * sr)
+    windows = []
+    for start in range(0, len(audio) - window_size + 1, hop_size):
+        segment = audio[start:start + window_size]
+        windows.append(segment)
+    if not windows:
+        pad = np.pad(audio, (0, max(0, window_size - len(audio))))
+        windows.append(pad)
+    return np.array(windows)
+
+def analyze_audio_temporal(file_path, sr, window_sec=1.0, hop_sec=0.5):
+    """
+    Analyze audio using sliding windows with given sampling rate (sr)
+    and return time steps, predictions, and raw audio.
+    """
+    try:
+        # Load and resample full audio
+        audio = load_full_audio(file_path, sr)
+
+        # Create overlapping windows
+        windows = sliding_window(audio, sr, window_sec=window_sec, hop_sec=hop_sec)
+        times = np.arange(len(windows)) * hop_sec
+
+        preds = []
+
+        # Analyze each window
+        for segment in tqdm(windows, desc=f"Analyzing audio @ {sr} Hz"):
+            segment_tensor = tf.convert_to_tensor(segment, dtype=tf.float32)
+
+            # Extract YAMNet features
+            scores, embeddings, spectrogram = yamnet_model(segment_tensor)
+            mean_embedding = tf.reduce_mean(embeddings, axis=0, keepdims=True)
+
+=======
 def sliding_window(audio, sr=16000, window_sec=1.0, hop_sec=0.5):
     """Split audio into sliding windows"""
     window_size = int(window_sec * sr)
@@ -316,11 +441,16 @@ def analyze_audio_temporal(file_path, window_sec=1.0, hop_sec=0.5):
             # Extract features from YAMNet
             scores, embeddings, spectrogram = yamnet_model(segment_tensor)
             mean_embedding = tf.reduce_mean(embeddings, axis=0, keepdims=True)
+>>>>>>> main
             # Predict using drone classifier
             pred = drone_classifier.predict(mean_embedding, verbose=0)
             preds.append(pred[0])
 
         preds = np.array(preds)
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
         return times, preds, audio
 
     except Exception as e:
@@ -387,12 +517,36 @@ def create_detection_timeline(times, preds, threshold=0.5):
     return fig
 
 
+<<<<<<< HEAD
+def create_spectrogram_plot(audio, sr, max_freq=None):
+    """
+    Create spectrogram plot with optional max frequency limit
+    audio : np.ndarray - إشارة الصوت
+    sr : int - معدل أخذ العينات (sampling rate)
+    max_freq : int or None - التردد الأقصى (Hz)
+    """
+    from scipy import signal as sp_signal
+    import numpy as np
+    import plotly.graph_objects as go
+
+    # حساب الـ spectrogram
+    f, t, Sxx = sp_signal.spectrogram(audio, sr, nperseg=512)
+
+    # لو فيه max_freq، قصّ النتائج عليه
+    if max_freq is not None:
+        mask = f <= max_freq
+        f = f[mask]
+        Sxx = Sxx[mask, :]
+
+    # إنشاء الرسم
+=======
 def create_spectrogram_plot(audio, sr):
     """Create spectrogram plot"""
     from scipy import signal as sp_signal
 
     f, t, Sxx = sp_signal.spectrogram(audio, sr, nperseg=256)
 
+>>>>>>> main
     fig = go.Figure(data=go.Heatmap(
         z=10 * np.log10(Sxx + 1e-10),
         x=t,
@@ -401,17 +555,31 @@ def create_spectrogram_plot(audio, sr):
         colorbar=dict(title="Power (dB)")
     ))
 
+<<<<<<< HEAD
+    # إعداد الشكل العام
+    fig.update_layout(
+        title=f"Audio Spectrogram (0 - {max_freq or sr//2} Hz)",
+        xaxis_title="Time (seconds)",
+        yaxis_title="Frequency (Hz)",
+        template='plotly_white',
+        height=600
+=======
     fig.update_layout(
         title="Audio Spectrogram",
         xaxis_title="Time (seconds)",
         yaxis_title="Frequency (Hz)",
         template='plotly_white',
         height=400
+>>>>>>> main
     )
 
     return fig
 
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
 def create_detection_summary(times, preds, threshold=0.5):
     """Create detection summary statistics"""
     drone_detections = (preds[:, 0] > threshold).sum()
@@ -526,12 +694,17 @@ def create_detection_summary(times, preds, threshold=0.5):
             ])
         ]
     )
+<<<<<<< HEAD
+def register_callbacks(app):
+    # ----------------- Callback Registration Function -----------------
+=======
 
 
 # ----------------- Callback Registration Function -----------------
 def register_callbacks(app):
     """Register callbacks with the app instance"""
 
+>>>>>>> main
     @app.callback(
         Output('drone-file-status', 'children'),
         Output('uploaded-drone-data', 'data'),
@@ -542,11 +715,45 @@ def register_callbacks(app):
         if not contents:
             return "No file uploaded yet", None
 
+<<<<<<< HEAD
+        try:
+            # حفظ الملف مؤقتًا
+            content_type, content_string = contents.split(',')
+            decoded = base64.b64decode(content_string)
+            temp_path = os.path.join(UPLOAD_FOLDER, filename)
+            with open(temp_path, 'wb') as f:
+                f.write(decoded)
+
+            audio, sr = librosa.load(temp_path, sr=None, mono=True)
+            duration = len(audio) / sr
+            max_freq = sr / 2  # Nyquist frequency
+
+            # عرض التفاصيل في واجهة الرفع
+            file_info = html.Div([
+                html.P(f"File uploaded: {filename}", style={'fontWeight': 'bold'}),
+                html.P(f"Duration: {duration:.2f} seconds"),
+                # html.P(f"Sampling Rate: {sr} Hz"),
+                # html.P(f"Maximum Frequency: {max_freq:.1f} Hz", style={'color': '#1E3A8A', 'fontWeight': 'bold'}),
+                html.Small("Ready for processing", style={'color': '#6B7280'})
+            ], style={'textAlign': 'center'})
+
+            return file_info, {
+                'contents': contents,
+                'filename': filename,
+                'sr': sr,
+                'max_freq': max_freq
+            }
+
+        except Exception as e:
+            return f"Error reading file: {str(e)}", None
+
+=======
         return html.Div([
             f"File uploaded: {filename}",
             html.Br(),
             html.Small(f"Ready for processing", style={'color': '#6B7280'})
         ]), {'contents': contents, 'filename': filename}
+>>>>>>> main
 
     @app.callback(
         Output('drone-player-container', 'children'),
@@ -556,9 +763,16 @@ def register_callbacks(app):
         State('uploaded-drone-data', 'data'),
         State('window-size', 'value'),
         State('hop-size', 'value'),
+<<<<<<< HEAD
+        State('threshold', 'value'),
+        State('sample-rate-slider', 'value')
+    )
+    def process_drone_analysis(analyze_clicks, uploaded_data, window_size, hop_size, threshold, sample_rate):
+=======
         State('threshold', 'value')
     )
     def process_drone_analysis(analyze_clicks, uploaded_data, window_size, hop_size, threshold):
+>>>>>>> main
         if analyze_clicks == 0 or not uploaded_data:
             return "", "", ""
 
@@ -569,7 +783,10 @@ def register_callbacks(app):
             # Save uploaded file
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
+<<<<<<< HEAD
+=======
 
+>>>>>>> main
             temp_path = os.path.join(UPLOAD_FOLDER, filename)
             with open(temp_path, 'wb') as f:
                 f.write(decoded)
@@ -591,10 +808,22 @@ def register_callbacks(app):
                 )
                 return "", error_msg, ""
 
+<<<<<<< HEAD
+            # ✅ Analyze audio with user-selected Sampling Rate
+            times, preds, audio = analyze_audio_temporal(
+                temp_path,
+                sr=sample_rate,
+                window_sec=window_size,
+                hop_sec=hop_size
+            )
+
+            duration = len(audio) / sample_rate
+=======
             # Analyze audio
             times, preds, audio = analyze_audio_temporal(temp_path, window_size, hop_size)
             sr = 16000
             duration = len(audio) / sr
+>>>>>>> main
 
             # Audio player
             audio_player = html.Div(
@@ -607,6 +836,13 @@ def register_callbacks(app):
                 },
                 children=[
                     html.H3("Audio Player", style={'color': '#1E3A8A', 'marginBottom': '15px'}),
+<<<<<<< HEAD
+                    html.Audio(src=contents, controls=True, style={'width': '100%'}),
+                    html.Div([
+                        html.P(f"Filename: {filename}"),
+                        html.P(f"Duration: {duration:.2f} seconds"),
+                        html.P(f"Sample Rate: {sample_rate} Hz"),
+=======
                     html.Audio(
                         src=contents,
                         controls=True,
@@ -616,6 +852,7 @@ def register_callbacks(app):
                         html.P(f"Filename: {filename}"),
                         html.P(f"Duration: {duration:.2f} seconds"),
                         html.P(f"Sample Rate: {sr} Hz"),
+>>>>>>> main
                         html.P(f"Analyzed Windows: {len(times)}")
                     ], style={'marginTop': '15px', 'fontSize': '14px', 'color': '#374151'})
                 ]
@@ -625,9 +862,15 @@ def register_callbacks(app):
             summary = create_detection_summary(times, preds, threshold)
 
             # Visualizations
+<<<<<<< HEAD
+            fig_waveform = create_waveform_plot(audio, sample_rate)
+            fig_timeline = create_detection_timeline(times, preds, threshold)
+            fig_spectrogram = create_spectrogram_plot(audio, sample_rate)
+=======
             fig_waveform = create_waveform_plot(audio, sr)
             fig_timeline = create_detection_timeline(times, preds, threshold)
             fig_spectrogram = create_spectrogram_plot(audio, sr)
+>>>>>>> main
 
             visualizations = html.Div(
                 style={

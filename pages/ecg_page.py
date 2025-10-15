@@ -5,7 +5,10 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import wfdb
+<<<<<<< HEAD
+=======
 from pyts.image import RecurrencePlot
+>>>>>>> main
 from PIL import Image
 from scipy.signal import butter, filtfilt, resample
 import io
@@ -624,7 +627,86 @@ def process_ecg_signals(record):
         fs_final = fs
     
     return processed_signals, fs_final, lead_names
+<<<<<<< HEAD
+def apply_xor_to_chunks(signals, chunk_samples, current_position):
+    """
+    Apply XOR-like overlay to signal chunks where identical patterns cancel out.
+    
+    Logic:
+    - Each chunk is normalized to [-1, 1]
+    - Chunks accumulate: if waveforms align (same polarity) → they reinforce
+    - If waveforms oppose (opposite polarity) → they cancel toward 0
+    - Identical chunks → flat line, different chunks → visible patterns
+    """
+    total_chunks = signals.shape[0] // chunk_samples
+    current_chunk_idx = min(current_position // chunk_samples, total_chunks - 1)
+    
+    if current_chunk_idx == 0:
+        # First chunk - normalize it
+        chunk_end = min(chunk_samples, signals.shape[0])
+        chunk_data = signals[:chunk_end]
+        
+        if len(chunk_data) < chunk_samples:
+            chunk_data = np.pad(chunk_data, (0, chunk_samples - len(chunk_data)), mode='constant')
+        
+        # Normalize to [-1, 1]
+        if np.std(chunk_data) > 1e-6:
+            chunk_norm = (chunk_data - np.mean(chunk_data)) / (np.std(chunk_data) * 3)
+            chunk_norm = np.clip(chunk_norm, -1, 1)
+        else:
+            chunk_norm = chunk_data * 0
+        
+        return chunk_norm
+    
+    # Initialize with first chunk
+    chunk_end = min(chunk_samples, signals.shape[0])
+    first_chunk = signals[:chunk_end]
+    
+    if len(first_chunk) < chunk_samples:
+        first_chunk = np.pad(first_chunk, (0, chunk_samples - len(first_chunk)), mode='constant')
+    
+    if np.std(first_chunk) > 1e-6:
+        xor_accumulator = (first_chunk - np.mean(first_chunk)) / (np.std(first_chunk) * 3)
+        xor_accumulator = np.clip(xor_accumulator, -1, 1)
+    else:
+        xor_accumulator = first_chunk * 0
+    
+    # XOR overlay: multiply accumulated result by each new chunk
+    # Same polarity → positive product → they differ
+    # Opposite polarity → negative product → they cancel
+    # Limit to last 20 chunks for performance
+    start_chunk = max(1, current_chunk_idx - 19)
+    
+    for chunk_i in range(start_chunk, current_chunk_idx + 1):
+        chunk_start = chunk_i * chunk_samples
+        chunk_end = min(chunk_start + chunk_samples, signals.shape[0])
+        chunk_data = signals[chunk_start:chunk_end]
+        
+        if len(chunk_data) < chunk_samples:
+            chunk_data = np.pad(chunk_data, (0, chunk_samples - len(chunk_data)), mode='constant')
+        
+        # Normalize current chunk
+        if np.std(chunk_data) > 1e-6:
+            chunk_norm = (chunk_data - np.mean(chunk_data)) / (np.std(chunk_data) * 3)
+            chunk_norm = np.clip(chunk_norm, -1, 1)
+        else:
+            chunk_norm = chunk_data * 0
+        
+        # XOR-like operation: multiply and take absolute difference
+        # Where chunks match → low values, where they differ → high values
+        difference = np.abs(xor_accumulator - chunk_norm)
+        
+        # Update accumulator with the difference
+        xor_accumulator = difference
+    
+    # Scale to [0, 1] for display
+    if np.max(xor_accumulator) > 0:
+        xor_accumulator = xor_accumulator / np.max(xor_accumulator)
+    
+    return xor_accumulator
+=======
 
+>>>>>>> main
 # ----------------- Callbacks -----------------
 
 @callback(
@@ -726,16 +808,26 @@ def process_ecg(n_clicks, contents, filenames):
     results, error_msg = predict_abnormalities(record.p_signal, record.fs, record.sig_name)
     
     if error_msg or results is None:
+<<<<<<< HEAD
+        prediction_result = html.Div("⚠ Prediction Unavailable", style={'color': '#FFA500'})
+        prediction_probs = html.Div("Model not available", style={'color': '#ccc', 'textAlign': 'center'})
+        prediction_det = "Please ensure model file (ecg_model.hdf5) is in models/ directory"
+=======
         prediction_result = html.Div("⚠️ Prediction Unavailable", style={'color': '#FFA500'})
         prediction_probs = html.Div("Model not available", style={'color': '#ccc', 'textAlign': 'center'})
         prediction_det = "Please ensure model file (model.hdf5) is in models/ directory"
+>>>>>>> main
     else:
         max_abnormality = max(results, key=results.get)
         max_prob = results[max_abnormality]
         
         if max_prob > 0.5:
             prediction_result = html.Div(
+<<<<<<< HEAD
+                f"⚠ Detected: {max_abnormality}",
+=======
                 f"⚠️ Detected: {max_abnormality}",
+>>>>>>> main
                 style={'color': '#E74C3C'}
             )
         else:
@@ -802,7 +894,11 @@ def process_ecg(n_clicks, contents, filenames):
         high_risk = [ab for ab, prob in results.items() if prob > 0.5]
         if high_risk:
             prediction_det = html.Div([
+<<<<<<< HEAD
+                html.P("⚕ Clinical Recommendations:", style={'fontWeight': 'bold', 'color': '#00d9ff', 'marginBottom': '10px'}),
+=======
                 html.P("⚕️ Clinical Recommendations:", style={'fontWeight': 'bold', 'color': '#00d9ff', 'marginBottom': '10px'}),
+>>>>>>> main
                 html.Ul([
                     html.Li(f"High probability detected for: {', '.join(high_risk)}", style={'color': '#E74C3C'}),
                     html.Li("Consult a cardiologist for detailed evaluation"),
@@ -943,7 +1039,11 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
     if callback_context.triggered:
         trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
         if trigger_id == 'pan-clicks' and pan_clicks:
+<<<<<<< HEAD
+            pan_amount = int(window_width * fs * 0.5)
+=======
             pan_amount = int(window_width * fs * 0.5)  # Pan by half window
+>>>>>>> main
             if pan_clicks.get('back', 0) > stream_state.get('last_back', 0):
                 position = max(0, position - pan_amount)
                 stream_state['last_back'] = pan_clicks['back']
@@ -957,7 +1057,11 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
     
     # Update position for streaming
     if is_streaming:
+<<<<<<< HEAD
+        samples_per_update = int(fs * 0.1 * speed)
+=======
         samples_per_update = int(fs * 0.1 * speed)  # Speed multiplier
+>>>>>>> main
         position += samples_per_update
         
         if position >= signals.shape[0]:
@@ -978,7 +1082,10 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
     
     # Generate appropriate visualization based on mode
     if graph_mode == 'waveform':
+<<<<<<< HEAD
+=======
         # Default continuous-time signal viewer
+>>>>>>> main
         if not selected_channels:
             fig = go.Figure()
         else:
@@ -1022,12 +1129,84 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
             fig.update_xaxes(title_text="Time (seconds)", row=n_channels, col=1)
     
     elif graph_mode == 'xor':
+<<<<<<< HEAD
+        # True XOR chunks visualization - single combined graph like EEG
+=======
         # XOR chunks visualization
+>>>>>>> main
         if not selected_channels:
             fig = go.Figure()
         else:
             chunk_samples = int(window_width * fs)
             total_chunks = signals.shape[0] // chunk_samples
+<<<<<<< HEAD
+            current_chunk_idx = position // chunk_samples
+            
+            fig = go.Figure()
+            
+            colors = ['#00d9ff', '#ff006e', '#8338ec', '#2a9d8f', '#e9c46a', '#f4a261']
+            time_chunk = np.arange(chunk_samples) / fs
+            
+            # Add zero reference line first (behind other traces)
+            fig.add_trace(
+                go.Scatter(
+                    x=time_chunk,
+                    y=np.zeros(chunk_samples),
+                    mode='lines',
+                    line=dict(color='#666666', width=1, dash='dot'),
+                    showlegend=False,
+                    name='Zero Reference'
+                )
+            )
+            
+            # Plot XOR result for each selected channel
+            for idx, ch in enumerate(selected_channels):
+                if ch < signals.shape[1]:
+                    # Apply true XOR operation with current position
+                    xor_result = apply_xor_to_chunks(signals[:, ch], chunk_samples, position)
+                    
+                    # Apply zoom
+                    xor_result_scaled = xor_result * zoom
+                    
+                    lead_name = lead_names[ch] if ch < len(lead_names) else f'Ch {ch+1}'
+                    
+                    # Plot the XOR result with fill
+                    fig.add_trace(
+                        go.Scatter(
+                            x=time_chunk,
+                            y=xor_result_scaled,
+                            mode='lines',
+                            line=dict(color=colors[idx % len(colors)], width=2),
+                            name=lead_name,
+                            fill='tozeroy',
+                            fillcolor=f'rgba({int(colors[idx % len(colors)][1:3], 16)}, {int(colors[idx % len(colors)][3:5], 16)}, {int(colors[idx % len(colors)][5:7], 16)}, 0.2)'
+                        )
+                    )
+            
+            chunks_processed = min(current_chunk_idx + 1, total_chunks)
+            fig.update_layout(
+                title=f"XOR Overlay Graph - Identical Chunks Cancel Out<br><sub>Chunks analyzed: {chunks_processed}/{total_chunks} | Chunk width: {window_width}s | Speed: {speed}x</sub>",
+                xaxis_title="Time within chunk (seconds)",
+                yaxis_title="XOR Amplitude (0 = cancelled)",
+                plot_bgcolor='#0f1626',
+                paper_bgcolor='#16213e',
+                font=dict(color='#00d9ff'),
+                height=700,
+                margin=dict(l=60, r=40, t=100, b=60),
+                showlegend=True,
+                legend=dict(
+                    bgcolor='#0f1626',
+                    bordercolor='#00d9ff',
+                    borderwidth=1,
+                    x=1.02,
+                    y=1
+                ),
+                xaxis=dict(gridcolor='#2a2a4e'),
+                yaxis=dict(gridcolor='#2a2a4e', range=[-0.1, 1.1])
+            )
+    
+    elif graph_mode == 'polar':
+=======
             
             # Collect all chunks up to current position
             current_chunk_idx = position // chunk_samples
@@ -1094,6 +1273,7 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
     
     elif graph_mode == 'polar':
         # Polar graph representation
+>>>>>>> main
         if not selected_channels:
             fig = go.Figure()
         else:
@@ -1104,6 +1284,14 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
             for idx, ch in enumerate(selected_channels):
                 if ch < signals.shape[1]:
                     if polar_mode == 'cumulative':
+<<<<<<< HEAD
+                        signal_data = signals[:end, ch] * zoom
+                        theta = np.linspace(0, 360 * (end / window_samples), len(signal_data))
+                    else:
+                        signal_data = signals[start:end, ch] * zoom
+                        theta = np.linspace(0, 360, len(signal_data))
+                    
+=======
                         # Cumulative: show all data up to current position
                         signal_data = signals[:end, ch] * zoom
                         theta = np.linspace(0, 360 * (end / window_samples), len(signal_data))
@@ -1113,6 +1301,7 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
                         theta = np.linspace(0, 360, len(signal_data))
                     
                     # Ensure positive radius
+>>>>>>> main
                     r_min = np.min(signal_data)
                     r_offset = abs(r_min) + 0.5 if r_min < 0 else 0
                     r_values = signal_data + r_offset
@@ -1155,7 +1344,10 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
             )
     
     elif graph_mode == 'reoccurrence':
+<<<<<<< HEAD
+=======
         # Reoccurrence scatter plot (cumulative)
+>>>>>>> main
         if reoccurrence_x is None or reoccurrence_y is None:
             fig = go.Figure()
             fig.add_annotation(
@@ -1167,6 +1359,32 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
         elif reoccurrence_x >= signals.shape[1] or reoccurrence_y >= signals.shape[1]:
             fig = go.Figure()
         else:
+<<<<<<< HEAD
+            x_data = signals[:end, reoccurrence_x] * zoom
+            y_data = signals[:end, reoccurrence_y] * zoom
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=x_data,
+                y=y_data,
+                mode='markers',
+                marker=dict(
+                    size=2,
+                    color=np.arange(len(x_data)),
+                    colorscale=colormap,
+                    showscale=True,
+                    colorbar=dict(
+                        title=dict(
+                            text="Time",
+                            side="right"
+                        ),
+                        tickfont=dict(color='#00d9ff')
+                    ),
+                    opacity=0.6
+                ),
+                showlegend=False
+=======
             # Cumulative scatter plot
             x_data = signals[:end, reoccurrence_x] * zoom
             y_data = signals[:end, reoccurrence_y] * zoom
@@ -1187,13 +1405,18 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
                 ),
                 nbinsx=50,
                 nbinsy=50
+>>>>>>> main
             ))
             
             x_name = lead_names[reoccurrence_x] if reoccurrence_x < len(lead_names) else f'Ch {reoccurrence_x+1}'
             y_name = lead_names[reoccurrence_y] if reoccurrence_y < len(lead_names) else f'Ch {reoccurrence_y+1}'
             
             fig.update_layout(
+<<<<<<< HEAD
+                title=f"Reoccurrence Scatter Plot - {x_name} vs {y_name} (Cumulative)",
+=======
                 title=f"Reoccurrence Graph - {x_name} vs {y_name} (Cumulative)",
+>>>>>>> main
                 plot_bgcolor='#0f1626',
                 paper_bgcolor='#16213e',
                 font=dict(color='#00d9ff'),
@@ -1214,7 +1437,10 @@ def update_stream(n_intervals, graph_mode, window_width, selected_channels, spee
     else:
         fig = go.Figure()
     
+<<<<<<< HEAD
+=======
     # Update stream state
+>>>>>>> main
     stream_state['position'] = position
     
     return fig, stream_state
