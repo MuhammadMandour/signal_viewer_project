@@ -7,3 +7,8 @@ scipy
 tensorflow
 pyts
 Pillow
+mne
+librosa
+tensorflow_hub
+xarray
+netCDF4
